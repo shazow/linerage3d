@@ -14,5 +14,6 @@ void main() {
     float lightAngle = dot(fragNormal, lightPosition);
 
     // use the gamma corrected color in the fragment
-    gl_FragColor = surfaceColor * lightAngle;
+    //gl_FragColor = surfaceColor * lightAngle;
+    gl_FragColor = surfaceColor;
 }

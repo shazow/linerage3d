@@ -85,3 +85,16 @@ func LoadTexture(name string) (tex gl.Texture, err error) {
 
 	return
 }
+
+func Quad(x, y, z, w, h float32) []float32 {
+	return []float32{
+		// First triangle
+		x + w, y + h, z, // Top Right
+		x, y + h, z, // Top Left
+		x, y, z, // Bottom Left
+		// Second triangle
+		x + w, y, z, // Bottom Right
+		x + w, y + h, z, // Top Right
+		x, y, z, // Bottom Left
+	}
+}

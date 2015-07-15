@@ -7,37 +7,18 @@ import (
 	mgl "github.com/go-gl/mathgl/mgl32"
 	"golang.org/x/mobile/app"
 	"golang.org/x/mobile/event"
-	"golang.org/x/mobile/exp/app/debug"
 	"golang.org/x/mobile/geom"
 	"golang.org/x/mobile/gl"
 )
-
-type Shape struct {
-	buf gl.Buffer
-
-	vertexCount int
-}
-
-type Shader struct {
-	program      gl.Program
-	vertCoord    gl.Attrib
-	vertNormal   gl.Attrib
-	vertTexCoord gl.Attrib
-
-	projection   gl.Uniform
-	view         gl.Uniform
-	model        gl.Uniform
-	normalMatrix gl.Uniform
-
-	lightPosition    gl.Uniform
-	lightIntensities gl.Uniform
-}
 
 type Engine struct {
 	shader   Shader
 	shape    Shape
 	touchLoc geom.Point
 	started  time.Time
+	offset   int
+	pos      [5]float32
+	frames   int
 }
 
 func (e *Engine) Start() {
@@ -49,22 +30,14 @@ func (e *Engine) Start() {
 	if err != nil {
 		panic(fmt.Sprintln("LoadProgram failed:", err))
 	}
+	e.pos = [5]float32{0, 0, 0, 1, 1}
+	e.shape.vertices = append(e.shape.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
+	//e.shape.normals = append(e.shape.normals, []float32{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}...)
+	//e.shape.vertices = cubeData
+	e.shape.VBO = gl.CreateBuffer()
+	e.shape.Buffer()
 
-	e.shape.vertexCount = len(cubeData) / (3 + 3)
-
-	e.shape.buf = gl.CreateBuffer()
-	gl.BindBuffer(gl.ARRAY_BUFFER, e.shape.buf)
-	gl.BufferData(gl.ARRAY_BUFFER, EncodeObject(cubeData), gl.STATIC_DRAW)
-
-	e.shader.vertCoord = gl.GetAttribLocation(e.shader.program, "vertCoord")
-
-	e.shader.projection = gl.GetUniformLocation(e.shader.program, "projection")
-	e.shader.view = gl.GetUniformLocation(e.shader.program, "view")
-	e.shader.model = gl.GetUniformLocation(e.shader.program, "model")
-	e.shader.normalMatrix = gl.GetUniformLocation(e.shader.program, "normalMatrix")
-
-	e.shader.lightIntensities = gl.GetUniformLocation(e.shader.program, "lightIntensities")
-	e.shader.lightPosition = gl.GetUniformLocation(e.shader.program, "lightPosition")
+	e.shader.Bind()
 
 	e.started = time.Now()
 
@@ -73,7 +46,7 @@ func (e *Engine) Start() {
 
 func (e *Engine) Stop() {
 	gl.DeleteProgram(e.shader.program)
-	gl.DeleteBuffer(e.shape.buf)
+	gl.DeleteBuffer(e.shape.VBO)
 }
 
 func (e *Engine) Config(new, old event.Config) {
@@ -87,14 +60,13 @@ func (e *Engine) Touch(t event.Touch, c event.Config) {
 func (e *Engine) Draw(c event.Config) {
 	since := time.Now().Sub(e.started)
 
-	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthFunc(gl.LESS)
-
 	gl.ClearColor(0, 0, 0, 1)
-	gl.Clear(gl.COLOR_BUFFER_BIT)
-	gl.Clear(gl.DEPTH_BUFFER_BIT)
-
-	gl.UseProgram(e.shader.program)
+	//gl.Clear(gl.COLOR_BUFFER_BIT)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	gl.Enable(gl.DEPTH_TEST)
+	//gl.Disable(gl.CULL_FACE)
+	//gl.DepthFunc(gl.LESS)
+	//gl.SampleCoverage(4.0, false)
 
 	// Setup MVP
 	var m mgl.Mat4
@@ -120,21 +92,20 @@ func (e *Engine) Draw(c event.Config) {
 	gl.Uniform3fv(e.shader.lightIntensities, []float32{1, 1, 1})
 	gl.Uniform3fv(e.shader.lightPosition, []float32{1, 1, 1})
 
+	if int(since.Seconds()) > e.offset && false {
+		e.pos[1] += 0.1
+		offset := len(e.shape.vertices) / vertexDim
+		e.shape.vertices = append(e.shape.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
+		//e.shape.normals = append(e.shape.normals, []float32{1.0, 0.0, 0.0}...)
+		e.shape.BufferSub(offset)
+		e.offset++
+		//e.shape.Buffer()
+	}
+
+	//debug.DrawFPS(c)
+
 	// Draw our shape
-	gl.BindBuffer(gl.ARRAY_BUFFER, e.shape.buf)
-
-	stride := 4 * (3 + 3) // 4 bytes in float, (3+2+3) values per vertex
-	gl.EnableVertexAttribArray(e.shader.vertCoord)
-	gl.VertexAttribPointer(e.shader.vertCoord, 3, gl.FLOAT, false, stride, 0)
-
-	gl.EnableVertexAttribArray(e.shader.vertNormal)
-	gl.VertexAttribPointer(e.shader.vertNormal, 3, gl.FLOAT, false, stride, 12)
-
-	gl.DrawArrays(gl.TRIANGLES, 0, e.shape.vertexCount)
-
-	gl.DisableVertexAttribArray(e.shader.vertCoord)
-
-	debug.DrawFPS(c)
+	e.shader.Draw(&e.shape)
 }
 
 func main() {
