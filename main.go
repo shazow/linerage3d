@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	mgl "github.com/go-gl/mathgl/mgl32"
@@ -13,7 +15,7 @@ import (
 
 type Engine struct {
 	shader   Shader
-	shape    Shape
+	shape    DynamicShape
 	touchLoc geom.Point
 	started  time.Time
 	offset   int
@@ -24,7 +26,7 @@ type Engine struct {
 func (e *Engine) Start() {
 	var err error
 
-	fmt.Println("Loading shaders...")
+	log.Println("Loading shaders...")
 
 	e.shader.program, err = LoadProgram("shader.v.glsl", "shader.f.glsl")
 	if err != nil {
@@ -34,14 +36,15 @@ func (e *Engine) Start() {
 	e.shape.vertices = append(e.shape.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
 	//e.shape.normals = append(e.shape.normals, []float32{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}...)
 	//e.shape.vertices = cubeData
-	e.shape.VBO = gl.CreateBuffer()
-	e.shape.Buffer()
+	e.shape.Init(6 * 4 * 1000)
+	e.shape.Buffer(0)
 
+	gl.UseProgram(e.shader.program)
 	e.shader.Bind()
 
 	e.started = time.Now()
 
-	fmt.Println("Starting.")
+	log.Println("Starting.")
 }
 
 func (e *Engine) Stop() {
@@ -92,20 +95,25 @@ func (e *Engine) Draw(c event.Config) {
 	gl.Uniform3fv(e.shader.lightIntensities, []float32{1, 1, 1})
 	gl.Uniform3fv(e.shader.lightPosition, []float32{1, 1, 1})
 
-	if int(since.Seconds()) > e.offset && false {
-		e.pos[1] += 0.1
+	if int(since.Seconds()) > e.offset {
+		e.pos[1] += 1
 		offset := len(e.shape.vertices) / vertexDim
 		e.shape.vertices = append(e.shape.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
 		//e.shape.normals = append(e.shape.normals, []float32{1.0, 0.0, 0.0}...)
-		e.shape.BufferSub(offset)
+		e.shape.Buffer(offset)
 		e.offset++
-		//e.shape.Buffer()
 	}
 
 	//debug.DrawFPS(c)
 
 	// Draw our shape
 	e.shader.Draw(&e.shape)
+
+	/*
+		if glErr := gl.GetError(); glErr != 0 {
+			fmt.Println("glErr", glErr)
+		}
+	*/
 }
 
 func main() {
@@ -117,4 +125,7 @@ func main() {
 		Touch:  e.Touch,
 		Config: e.Config,
 	})
+
+	log.SetOutput(os.Stdout)
+
 }

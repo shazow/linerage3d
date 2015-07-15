@@ -13,7 +13,13 @@ const textureDim = 2
 const normalDim = 3
 const vecSize = 4
 
-type Shape struct {
+type Shape interface {
+	Bind()
+	Stride() int
+	Len() int
+}
+
+type DynamicShape struct {
 	VBO   gl.Buffer
 	glTex gl.Texture
 
@@ -22,7 +28,7 @@ type Shape struct {
 	normals  []float32 // Vec3
 }
 
-func (s *Shape) Stride() int {
+func (s *DynamicShape) Stride() int {
 	r := vertexDim
 	if len(s.textures) > 0 {
 		r += textureDim
@@ -33,11 +39,11 @@ func (s *Shape) Stride() int {
 	return r * vecSize
 }
 
-func (s *Shape) Len() int {
+func (s *DynamicShape) Len() int {
 	return len(s.vertices) / vertexDim
 }
 
-func (s *Shape) BytesOffset(n int) []byte {
+func (s *DynamicShape) BytesOffset(n int) []byte {
 	buf := bytes.Buffer{}
 
 	wrote := [][]float32{}
@@ -64,26 +70,28 @@ func (s *Shape) BytesOffset(n int) []byte {
 	return buf.Bytes()
 }
 
-func (s *Shape) Bytes() []byte {
+func (s *DynamicShape) Bytes() []byte {
 	return s.BytesOffset(0)
 }
 
-func (s *Shape) BufferSub(offset int) {
+// Bind activates the shape's buffers
+func (s *DynamicShape) Bind() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, s.VBO)
+}
+
+func (s *DynamicShape) Init(bufSize int) {
+	s.VBO = gl.CreateBuffer()
+	s.Bind()
+	gl.BufferInit(gl.ARRAY_BUFFER, bufSize, gl.DYNAMIC_DRAW)
+}
+
+func (s *DynamicShape) Buffer(offset int) {
+	s.Bind()
 	data := s.BytesOffset(offset)
 	if len(data) == 0 {
 		return
 	}
 	gl.BufferSubData(gl.ARRAY_BUFFER, offset*s.Stride(), data)
-}
-
-func (s *Shape) Buffer() {
-	gl.BindBuffer(gl.ARRAY_BUFFER, s.VBO)
-	data := s.Bytes()
-	if len(data) == 0 {
-		return
-	}
-	gl.BufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
 }
 
 // TODO: Good render loop: http://www.java-gaming.org/index.php?topic=18710.0
