@@ -14,6 +14,7 @@ import (
 )
 
 type Engine struct {
+	camera   Camera
 	shader   Shader
 	shape    DynamicShape
 	touchLoc geom.Point
@@ -54,6 +55,7 @@ func (e *Engine) Stop() {
 
 func (e *Engine) Config(new, old event.Config) {
 	e.touchLoc = geom.Point{new.Width / 2, new.Height / 2}
+	e.camera.Perspective(0.785, float32(new.Width/new.Height), 0.1, 100.0)
 }
 
 func (e *Engine) Touch(t event.Touch, c event.Config) {
@@ -71,25 +73,19 @@ func (e *Engine) Draw(c event.Config) {
 	//gl.DepthFunc(gl.LESS)
 	//gl.SampleCoverage(4.0, false)
 
+	e.camera.Move(mgl.Vec3{3, 3, 3})
+	e.camera.Pan(mgl.Vec3{0, 0, 0}, mgl.Vec3{0, 1, 0})
+
 	// Setup MVP
-	var m mgl.Mat4
-	m = mgl.Perspective(0.785, float32(c.Width/c.Height), 0.1, 10.0)
-	gl.UniformMatrix4fv(e.shader.projection, m[:])
+	projection, view := e.camera.Projection(), e.camera.View()
+	gl.UniformMatrix4fv(e.shader.projection, projection[:])
+	gl.UniformMatrix4fv(e.shader.view, view[:])
 
-	m = mgl.LookAtV(
-		mgl.Vec3{3, 3, 3}, // eye
-		mgl.Vec3{0, 0, 0}, // center
-		mgl.Vec3{0, 1, 0}, // up
-	)
-	gl.UniformMatrix4fv(e.shader.view, m[:])
+	model := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
+	gl.UniformMatrix4fv(e.shader.model, model[:])
 
-	modelView := m
-
-	m = mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
-	gl.UniformMatrix4fv(e.shader.model, m[:])
-
-	m = m.Mul4(modelView).Inv().Transpose()
-	gl.UniformMatrix4fv(e.shader.normalMatrix, m[:])
+	normal := model.Mul4(view).Inv().Transpose()
+	gl.UniformMatrix4fv(e.shader.normalMatrix, normal[:])
 
 	// Light
 	gl.Uniform3fv(e.shader.lightIntensities, []float32{1, 1, 1})
