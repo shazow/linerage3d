@@ -14,14 +14,17 @@ import (
 )
 
 type Engine struct {
-	camera   Camera
-	shader   Shader
-	shape    DynamicShape
+	camera *EulerCamera
+	scene  *Scene
+	shader *Shader
+
 	touchLoc geom.Point
 	started  time.Time
 	offset   int
 	pos      [5]float32
 	frames   int
+
+	line *DynamicShape
 }
 
 func (e *Engine) Start() {
@@ -33,24 +36,33 @@ func (e *Engine) Start() {
 	if err != nil {
 		panic(fmt.Sprintln("LoadProgram failed:", err))
 	}
+
+	e.camera.Move(mgl.Vec3{3, 3, 3})
+	e.camera.Pan(mgl.Vec3{0, 0, 0}, mgl.Vec3{0, 1, 0})
+
+	shape := DynamicShape{}
+	e.line = &shape
+	e.scene.nodes = append(e.scene.nodes, Node{Shape: &shape, transform: mgl.Ident4()})
+
 	e.pos = [5]float32{0, 0, 0, 1, 1}
-	e.shape.vertices = append(e.shape.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
-	//e.shape.normals = append(e.shape.normals, []float32{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}...)
-	//e.shape.vertices = cubeData
-	e.shape.Init(6 * 4 * 1000)
-	e.shape.Buffer(0)
+	shape.vertices = append(shape.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
+	//shape.normals = append(shape.normals, []float32{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}...)
+	//shape.vertices = cubeData
+
+	shape.Init(6 * 4 * 1000)
+	shape.Buffer(0)
 
 	gl.UseProgram(e.shader.program)
-	e.shader.Bind()
+	e.scene.Bind()
 
 	e.started = time.Now()
 
-	log.Println("Starting.")
+	log.Println("Starting: ", e.scene.String())
 }
 
 func (e *Engine) Stop() {
 	gl.DeleteProgram(e.shader.program)
-	gl.DeleteBuffer(e.shape.VBO)
+	gl.DeleteBuffer(e.line.VBO)
 }
 
 func (e *Engine) Config(new, old event.Config) {
@@ -73,37 +85,20 @@ func (e *Engine) Draw(c event.Config) {
 	//gl.DepthFunc(gl.LESS)
 	//gl.SampleCoverage(4.0, false)
 
-	e.camera.Move(mgl.Vec3{3, 3, 3})
-	e.camera.Pan(mgl.Vec3{0, 0, 0}, mgl.Vec3{0, 1, 0})
-
-	// Setup MVP
-	projection, view := e.camera.Projection(), e.camera.View()
-	gl.UniformMatrix4fv(e.shader.projection, projection[:])
-	gl.UniformMatrix4fv(e.shader.view, view[:])
-
-	model := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
-	gl.UniformMatrix4fv(e.shader.model, model[:])
-
-	normal := model.Mul4(view).Inv().Transpose()
-	gl.UniformMatrix4fv(e.shader.normalMatrix, normal[:])
-
-	// Light
-	gl.Uniform3fv(e.shader.lightIntensities, []float32{1, 1, 1})
-	gl.Uniform3fv(e.shader.lightPosition, []float32{1, 1, 1})
+	//e.scene.nodes[0].transform = mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
 
 	if int(since.Seconds()) > e.offset {
 		e.pos[1] += 1
-		offset := len(e.shape.vertices) / vertexDim
-		e.shape.vertices = append(e.shape.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
+		offset := len(e.line.vertices) / vertexDim
+		e.line.vertices = append(e.line.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
 		//e.shape.normals = append(e.shape.normals, []float32{1.0, 0.0, 0.0}...)
-		e.shape.Buffer(offset)
+		e.line.Buffer(offset)
 		e.offset++
 	}
 
 	//debug.DrawFPS(c)
 
-	// Draw our shape
-	e.shader.Draw(&e.shape)
+	e.scene.Draw()
 
 	/*
 		if glErr := gl.GetError(); glErr != 0 {
@@ -113,7 +108,19 @@ func (e *Engine) Draw(c event.Config) {
 }
 
 func main() {
-	e := Engine{}
+	camera := EulerCamera{}
+	shader := Shader{}
+	e := Engine{
+		shader: &shader,
+		camera: &camera,
+		scene: &Scene{
+			Camera: &camera,
+			Shader: &shader,
+
+			ambientColor: mgl.Vec3{0.5, 0.5, 0.5},
+		},
+	}
+
 	app.Run(app.Callbacks{
 		Start:  e.Start,
 		Stop:   e.Stop,

@@ -17,6 +17,8 @@ type Shape interface {
 	Bind()
 	Stride() int
 	Len() int
+	EnableAttrib(gl.Attrib, gl.Attrib, gl.Attrib)
+	DisableAttrib(gl.Attrib, gl.Attrib, gl.Attrib)
 }
 
 type DynamicShape struct {
@@ -26,6 +28,28 @@ type DynamicShape struct {
 	vertices []float32 // Vec3
 	textures []float32 // Vec2 (UV)
 	normals  []float32 // Vec3
+}
+
+func (shape *DynamicShape) EnableAttrib(vertex gl.Attrib, normal gl.Attrib, texture gl.Attrib) {
+	shape.Bind()
+	stride := shape.Stride()
+
+	gl.EnableVertexAttribArray(vertex)
+	gl.VertexAttribPointer(vertex, vertexDim, gl.FLOAT, false, stride, 0)
+
+	if len(shape.normals) > 0 {
+		gl.EnableVertexAttribArray(normal)
+		gl.VertexAttribPointer(normal, normalDim, gl.FLOAT, false, stride, vertexDim*vecSize)
+	}
+	// TODO: texture
+}
+
+func (shape *DynamicShape) DisableAttrib(vertex gl.Attrib, normal gl.Attrib, texture gl.Attrib) {
+	gl.DisableVertexAttribArray(vertex)
+	if len(shape.normals) > 0 {
+		gl.DisableVertexAttribArray(normal)
+	}
+	// TODO: texture
 }
 
 func (s *DynamicShape) Stride() int {

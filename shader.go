@@ -29,27 +29,3 @@ func (shader *Shader) Bind() {
 	shader.lightIntensities = gl.GetUniformLocation(shader.program, "lightIntensities")
 	shader.lightPosition = gl.GetUniformLocation(shader.program, "lightPosition")
 }
-
-func (shader *Shader) Draw(shape Shape) {
-	shape.Bind()
-	stride := shape.Stride()
-
-	gl.EnableVertexAttribArray(shader.vertCoord)
-	gl.VertexAttribPointer(shader.vertCoord, vertexDim, gl.FLOAT, false, stride, 0)
-
-	/*
-		if len(shape.normals) > 0 {
-			gl.EnableVertexAttribArray(shader.vertNormal)
-			gl.VertexAttribPointer(shader.vertNormal, normalDim, gl.FLOAT, false, stride, vertexDim*vecSize)
-		}
-	*/
-
-	gl.DrawArrays(gl.TRIANGLES, 0, shape.Len())
-
-	gl.DisableVertexAttribArray(shader.vertCoord)
-	/*
-		if len(shape.normals) > 0 {
-			gl.DisableVertexAttribArray(shader.vertNormal)
-		}
-	*/
-}
