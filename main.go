@@ -42,7 +42,7 @@ func (e *Engine) Start() {
 
 	shape := DynamicShape{}
 	e.line = &shape
-	e.scene.nodes = append(e.scene.nodes, Node{Shape: &shape, transform: mgl.Ident4()})
+	e.scene.nodes = append(e.scene.nodes, Node{Shape: &shape})
 
 	e.pos = [5]float32{0, 0, 0, 1, 1}
 	shape.vertices = append(shape.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
@@ -85,7 +85,8 @@ func (e *Engine) Draw(c event.Config) {
 	//gl.DepthFunc(gl.LESS)
 	//gl.SampleCoverage(4.0, false)
 
-	//e.scene.nodes[0].transform = mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
+	rotation := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
+	e.scene.transform = &rotation
 
 	if int(since.Seconds()) > e.offset {
 		e.pos[1] += 1

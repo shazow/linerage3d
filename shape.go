@@ -21,7 +21,7 @@ type Shape interface {
 	DisableAttrib(gl.Attrib, gl.Attrib, gl.Attrib)
 }
 
-type DynamicShape struct {
+type StaticShape struct {
 	VBO   gl.Buffer
 	glTex gl.Texture
 
@@ -30,7 +30,7 @@ type DynamicShape struct {
 	normals  []float32 // Vec3
 }
 
-func (shape *DynamicShape) EnableAttrib(vertex gl.Attrib, normal gl.Attrib, texture gl.Attrib) {
+func (shape *StaticShape) EnableAttrib(vertex gl.Attrib, normal gl.Attrib, texture gl.Attrib) {
 	shape.Bind()
 	stride := shape.Stride()
 
@@ -44,7 +44,7 @@ func (shape *DynamicShape) EnableAttrib(vertex gl.Attrib, normal gl.Attrib, text
 	// TODO: texture
 }
 
-func (shape *DynamicShape) DisableAttrib(vertex gl.Attrib, normal gl.Attrib, texture gl.Attrib) {
+func (shape *StaticShape) DisableAttrib(vertex gl.Attrib, normal gl.Attrib, texture gl.Attrib) {
 	gl.DisableVertexAttribArray(vertex)
 	if len(shape.normals) > 0 {
 		gl.DisableVertexAttribArray(normal)
@@ -52,7 +52,7 @@ func (shape *DynamicShape) DisableAttrib(vertex gl.Attrib, normal gl.Attrib, tex
 	// TODO: texture
 }
 
-func (s *DynamicShape) Stride() int {
+func (s *StaticShape) Stride() int {
 	r := vertexDim
 	if len(s.textures) > 0 {
 		r += textureDim
@@ -63,11 +63,11 @@ func (s *DynamicShape) Stride() int {
 	return r * vecSize
 }
 
-func (s *DynamicShape) Len() int {
+func (s *StaticShape) Len() int {
 	return len(s.vertices) / vertexDim
 }
 
-func (s *DynamicShape) BytesOffset(n int) []byte {
+func (s *StaticShape) BytesOffset(n int) []byte {
 	buf := bytes.Buffer{}
 
 	wrote := [][]float32{}
@@ -94,13 +94,30 @@ func (s *DynamicShape) BytesOffset(n int) []byte {
 	return buf.Bytes()
 }
 
-func (s *DynamicShape) Bytes() []byte {
+func (s *StaticShape) Bytes() []byte {
 	return s.BytesOffset(0)
 }
 
 // Bind activates the shape's buffers
-func (s *DynamicShape) Bind() {
+func (s *StaticShape) Bind() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, s.VBO)
+}
+
+func (s *StaticShape) Init() {
+	s.VBO = gl.CreateBuffer()
+}
+
+func (s *StaticShape) Buffer() {
+	s.Bind()
+	data := s.Bytes()
+	if len(data) == 0 {
+		return
+	}
+	gl.BufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
+}
+
+type DynamicShape struct {
+	StaticShape
 }
 
 func (s *DynamicShape) Init(bufSize int) {
