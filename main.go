@@ -115,17 +115,13 @@ func (e *Engine) Draw(c config.Event) {
 	//gl.DepthFunc(gl.LESS)
 	//gl.SampleCoverage(4.0, false)
 
-	//rotation := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
-	//e.scene.transform = &rotation
+	// Spinny!
+	rotation := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
+	e.scene.transform = &rotation
 
 	e.line.Tick(since)
 	e.scene.Draw()
 
-	/*
-		if glErr := gl.GetError(); glErr != 0 {
-			fmt.Println("glErr", glErr)
-		}
-	*/
 }
 
 func main() {
