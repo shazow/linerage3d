@@ -13,6 +13,30 @@ import (
 	"golang.org/x/mobile/gl"
 )
 
+type Line struct {
+	*DynamicShape
+
+	offset int
+	pos    [5]float32
+
+	lastMove time.Duration
+	rate     time.Duration
+}
+
+func (line *Line) Tick(since time.Duration) {
+	if line.lastMove+line.rate > since {
+		return
+	}
+
+	line.lastMove = since
+	line.pos[1] += 1
+	offset := len(line.vertices) / vertexDim
+	line.vertices = append(line.vertices, Quad(line.pos[0], line.pos[1], line.pos[2], line.pos[3], line.pos[4])...)
+	//e.shape.normals = append(e.shape.normals, []float32{1.0, 0.0, 0.0}...)
+	line.Buffer(offset)
+	line.offset++
+}
+
 type Engine struct {
 	camera *EulerCamera
 	scene  *Scene
@@ -20,11 +44,8 @@ type Engine struct {
 
 	touchLoc geom.Point
 	started  time.Time
-	offset   int
-	pos      [5]float32
-	frames   int
 
-	line *DynamicShape
+	line *Line
 }
 
 func (e *Engine) Start() {
@@ -37,20 +58,25 @@ func (e *Engine) Start() {
 		panic(fmt.Sprintln("LoadProgram failed:", err))
 	}
 
-	e.camera.Move(mgl.Vec3{3, 3, 3})
+	e.camera.Move(mgl.Vec3{30, 30, 30})
 	e.camera.Pan(mgl.Vec3{0, 0, 0}, mgl.Vec3{0, 1, 0})
 
-	shape := DynamicShape{}
-	e.line = &shape
-	e.scene.nodes = append(e.scene.nodes, Node{Shape: &shape})
+	shape := &DynamicShape{}
+	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
 
-	e.pos = [5]float32{0, 0, 0, 1, 1}
-	shape.vertices = append(shape.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
+	e.line = &Line{
+		DynamicShape: shape,
+		rate:         time.Second / 10.0,
+	}
+
+	pos := [5]float32{0, 0, 0, 1, 1}
+	shape.vertices = append(shape.vertices, Quad(pos[0], pos[1], pos[2], pos[3], pos[4])...)
 	//shape.normals = append(shape.normals, []float32{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}...)
 	//shape.vertices = cubeData
 
-	shape.Init(6 * 4 * 1000)
-	shape.Buffer(0)
+	e.line.pos = pos
+	e.line.Init(6 * 4 * 1000)
+	e.line.Buffer(0)
 
 	gl.UseProgram(e.shader.program)
 	e.scene.Bind()
@@ -78,27 +104,18 @@ func (e *Engine) Draw(c event.Config) {
 	since := time.Now().Sub(e.started)
 
 	gl.ClearColor(0, 0, 0, 1)
-	//gl.Clear(gl.COLOR_BUFFER_BIT)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	gl.Enable(gl.DEPTH_TEST)
+	gl.Clear(gl.COLOR_BUFFER_BIT)
+	//gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	//gl.Enable(gl.DEPTH_TEST)
+
 	//gl.Disable(gl.CULL_FACE)
 	//gl.DepthFunc(gl.LESS)
 	//gl.SampleCoverage(4.0, false)
 
-	rotation := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
-	e.scene.transform = &rotation
+	//rotation := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
+	//e.scene.transform = &rotation
 
-	if int(since.Seconds()) > e.offset {
-		e.pos[1] += 1
-		offset := len(e.line.vertices) / vertexDim
-		e.line.vertices = append(e.line.vertices, Quad(e.pos[0], e.pos[1], e.pos[2], e.pos[3], e.pos[4])...)
-		//e.shape.normals = append(e.shape.normals, []float32{1.0, 0.0, 0.0}...)
-		e.line.Buffer(offset)
-		e.offset++
-	}
-
-	//debug.DrawFPS(c)
-
+	e.line.Tick(since)
 	e.scene.Draw()
 
 	/*
