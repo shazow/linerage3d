@@ -133,7 +133,7 @@ func (c *QuatCamera) Move(delta mgl.Vec3) {
 
 // View returns the transform matrix from world space into camera space
 func (c *QuatCamera) View() mgl.Mat4 {
-	return mgl.LookAtV(c.position, c.position.Add(c.Center()), c.rotation.Rotate(AxisUp).Normalize())
+	return mgl.LookAtV(c.position, c.position.Add(c.Center()), c.Up())
 	//p := c.position
 	//return mgl.Translate3D(p[0], p[1], p[2]).Mul4(c.rotation.Mat4()).Inv()
 }
@@ -144,14 +144,20 @@ func (c *QuatCamera) Projection() mgl.Mat4 {
 }
 
 // Center returns the direction vector of the camera
+func (c *QuatCamera) Up() mgl.Vec3 {
+	return c.rotation.Rotate(AxisUp)
+}
+
+// Center returns the direction vector of the camera
 func (c *QuatCamera) Center() mgl.Vec3 {
 	axisBack := mgl.Vec3{}.Sub(AxisFront)
-	return c.rotation.Rotate(axisBack).Normalize()
+	return c.rotation.Rotate(axisBack)
 }
 
 // String returns a string representation of the camera for debugging.
 func (c *QuatCamera) String() string {
 	return fmt.Sprintf(`	position: %v
 	rotation: %v
-	center:   %v`+"\n", c.position, c.rotation, c.Center())
+	center:   %v
+	up:       %v`+"\n", c.position, c.rotation, c.Center(), c.Up())
 }
