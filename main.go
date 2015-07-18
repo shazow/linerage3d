@@ -16,7 +16,7 @@ import (
 	"golang.org/x/mobile/gl"
 )
 
-const mouseSensitivity = 0.02
+const mouseSensitivity = 0.01
 
 type Line struct {
 	*DynamicShape
@@ -43,7 +43,7 @@ func (line *Line) Tick(since time.Duration) {
 }
 
 type Engine struct {
-	camera *EulerCamera
+	camera *QuatCamera
 	scene  *Scene
 	shader *Shader
 
@@ -66,8 +66,8 @@ func (e *Engine) Start() {
 		panic(fmt.Sprintln("LoadProgram failed:", err))
 	}
 
-	e.camera.Rotate(mgl.Vec3{halfPi * 2, 0, 0})
 	e.camera.Move(mgl.Vec3{3, 3, -10})
+	e.camera.RotateTo(mgl.Vec3{0, 0, 1})
 
 	shape := &DynamicShape{}
 	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
@@ -101,7 +101,7 @@ func (e *Engine) Stop() {
 
 func (e *Engine) Config(new, old config.Event) {
 	e.touchLoc = geom.Point{new.Width / 2, new.Height / 2}
-	e.camera.Perspective(0.785, float32(new.Width/new.Height), 0.1, 100.0)
+	e.camera.SetPerspective(0.785, float32(new.Width/new.Height), 0.1, 100.0)
 }
 
 func (e *Engine) Touch(t touch.Event, c config.Event) {
@@ -142,7 +142,7 @@ func (e *Engine) Draw(c config.Event) {
 }
 
 func main() {
-	camera := EulerCamera{}
+	camera := QuatCamera{}
 	shader := Shader{}
 	engine := Engine{
 		shader: &shader,
