@@ -114,7 +114,7 @@ func (e *Engine) Touch(t touch.Event, c config.Event) {
 	e.touchLoc = t.Loc
 	if e.dragging {
 		deltaX, deltaY := float32(e.dragOrigin.X-e.touchLoc.X), float32(e.dragOrigin.Y-e.touchLoc.Y)
-		e.camera.Rotate(mgl.Vec3{-deltaX * mouseSensitivity, deltaY * mouseSensitivity, 0})
+		e.camera.Rotate(mgl.Vec3{deltaY * mouseSensitivity, deltaX * mouseSensitivity, 0})
 		e.dragOrigin = e.touchLoc
 		fmt.Println(e.camera.String())
 	}
