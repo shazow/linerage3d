@@ -16,6 +16,8 @@ import (
 	"golang.org/x/mobile/gl"
 )
 
+const mouseSensitivity = 180
+
 type Line struct {
 	*DynamicShape
 
@@ -64,8 +66,8 @@ func (e *Engine) Start() {
 		panic(fmt.Sprintln("LoadProgram failed:", err))
 	}
 
+	e.camera.Rotate(mgl.Vec3{0, 0, 0})
 	e.camera.Move(mgl.Vec3{30, 30, 30})
-	e.camera.Pan(mgl.Vec3{0, 0, 0}, mgl.Vec3{0, 1, 0})
 
 	shape := &DynamicShape{}
 	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
@@ -111,8 +113,9 @@ func (e *Engine) Touch(t touch.Event, c config.Event) {
 	}
 	e.touchLoc = t.Loc
 	if e.dragging {
-		delta := mgl.Vec2{float32(e.dragOrigin.X - e.touchLoc.X), float32(e.dragOrigin.Y - e.touchLoc.Y)}
-		e.camera.Pan(mgl.Vec3{delta[0], -delta[1], -50}, mgl.Vec3{0, 1, 0})
+		deltaX, deltaY := float32(e.dragOrigin.X-e.touchLoc.X), float32(e.dragOrigin.Y-e.touchLoc.Y)
+		e.camera.Rotate(mgl.Vec3{deltaX / mouseSensitivity, -deltaY / mouseSensitivity, 0})
+		e.dragOrigin = t.Loc
 	}
 }
 
