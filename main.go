@@ -45,10 +45,13 @@ type Engine struct {
 	scene  *Scene
 	shader *Shader
 
-	touchLoc geom.Point
-	started  time.Time
+	started time.Time
 
 	line *Line
+
+	touchLoc   geom.Point
+	dragOrigin geom.Point
+	dragging   bool
 }
 
 func (e *Engine) Start() {
@@ -100,7 +103,17 @@ func (e *Engine) Config(new, old config.Event) {
 }
 
 func (e *Engine) Touch(t touch.Event, c config.Event) {
+	if t.Type == touch.TypeStart {
+		e.dragOrigin = t.Loc
+		e.dragging = true
+	} else if t.Type == touch.TypeEnd {
+		e.dragging = false
+	}
 	e.touchLoc = t.Loc
+	if e.dragging {
+		delta := mgl.Vec2{float32(e.dragOrigin.X - e.touchLoc.X), float32(e.dragOrigin.Y - e.touchLoc.Y)}
+		e.camera.Pan(mgl.Vec3{delta[0], -delta[1], -50}, mgl.Vec3{0, 1, 0})
+	}
 }
 
 func (e *Engine) Draw(c config.Event) {
