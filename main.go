@@ -16,7 +16,7 @@ import (
 	"golang.org/x/mobile/gl"
 )
 
-const mouseSensitivity = 180
+const mouseSensitivity = 0.02
 
 type Line struct {
 	*DynamicShape
@@ -66,8 +66,8 @@ func (e *Engine) Start() {
 		panic(fmt.Sprintln("LoadProgram failed:", err))
 	}
 
-	e.camera.Rotate(mgl.Vec3{0, 0, 0})
-	e.camera.Move(mgl.Vec3{30, 30, 30})
+	e.camera.Rotate(mgl.Vec3{halfPi * 2, 0, 0})
+	e.camera.Move(mgl.Vec3{3, 3, -10})
 
 	shape := &DynamicShape{}
 	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
@@ -114,8 +114,9 @@ func (e *Engine) Touch(t touch.Event, c config.Event) {
 	e.touchLoc = t.Loc
 	if e.dragging {
 		deltaX, deltaY := float32(e.dragOrigin.X-e.touchLoc.X), float32(e.dragOrigin.Y-e.touchLoc.Y)
-		e.camera.Rotate(mgl.Vec3{deltaX / mouseSensitivity, -deltaY / mouseSensitivity, 0})
-		e.dragOrigin = t.Loc
+		e.camera.Rotate(mgl.Vec3{-deltaX * mouseSensitivity, deltaY * mouseSensitivity, 0})
+		e.dragOrigin = e.touchLoc
+		fmt.Println(e.camera.String())
 	}
 }
 
@@ -132,8 +133,8 @@ func (e *Engine) Draw(c config.Event) {
 	//gl.SampleCoverage(4.0, false)
 
 	// Spinny!
-	rotation := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
-	e.scene.transform = &rotation
+	//rotation := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
+	//e.scene.transform = &rotation
 
 	e.line.Tick(since)
 	e.scene.Draw()

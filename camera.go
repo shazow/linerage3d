@@ -9,6 +9,8 @@ import (
 
 const halfPi = math.Pi / 2.0
 
+var worldUp = mgl.Vec3{0, 1, 0}
+
 type Camera interface {
 	View() mgl.Mat4
 	Projection() mgl.Mat4
@@ -32,36 +34,37 @@ func (c *EulerCamera) Perspective(fovy, aspect, near, far float32) {
 }
 
 func (c *EulerCamera) updateVectors() {
+	// TODO: Read up on http://learnopengl.com/#!Getting-started/Camera
 	// Borrowed from https://github.com/mmchugh/planetary/blob/master/src/helpers/camera.cpp
 	c.center = mgl.Vec3{
-		float32(math.Cos(c.pitch) * math.Sin(c.yaw)),
-		float32(math.Sin(c.pitch)),
 		float32(math.Cos(c.pitch) * math.Cos(c.yaw)),
-	}
+		float32(math.Sin(c.pitch)),
+		float32(math.Cos(c.pitch) * math.Sin(c.yaw)),
+	}.Normalize()
 
-	c.right = mgl.Vec3{
-		float32(math.Sin(c.yaw - halfPi)),
-		0,
-		float32(math.Cos(c.pitch - halfPi)),
-	}
-
+	c.right = c.center.Cross(worldUp).Normalize()
 	c.up = c.right.Cross(c.center)
 }
 
 // Rotate adjusts the direction vectors by a delta vector of {pitch, yaw, roll}.
 // Roll is ignored for now.
 func (c *EulerCamera) Rotate(delta mgl.Vec3) {
-	c.pitch += float64(delta[0])
-	c.yaw += float64(delta[1])
+	c.yaw += float64(delta.X())
+	c.pitch += float64(delta.Y())
 
 	// Limit vertical rotation to avoid gimbal lock
-	if c.yaw > halfPi {
-		c.yaw = halfPi
-	} else if c.yaw < -halfPi {
-		c.yaw = -halfPi
+	if c.pitch > halfPi {
+		c.pitch = halfPi
+	} else if c.pitch < -halfPi {
+		c.pitch = -halfPi
 	}
 
 	c.updateVectors()
+}
+
+// RotateTo adjusts the yaw and pitch to face a point.
+func (c *EulerCamera) RotateTo(point mgl.Vec3) {
+	// TODO: https://math.stackexchange.com/questions/470112/calculate-camera-pitch-yaw-to-face-point
 }
 
 // Move adjusts the position of the camera by a delta vector relative to the camera is facing.
@@ -71,7 +74,7 @@ func (c *EulerCamera) Move(delta mgl.Vec3) {
 
 // View returns the transform matrix from world space into camera space
 func (c *EulerCamera) View() mgl.Mat4 {
-	return mgl.LookAtV(c.eye, c.center, c.up)
+	return mgl.LookAtV(c.eye, c.eye.Add(c.center), c.up)
 }
 
 // Projection returns the projection matrix for the camera perspective
@@ -81,5 +84,8 @@ func (c *EulerCamera) Projection() mgl.Mat4 {
 
 // String returns a string representation of the camera for debugging.
 func (c *EulerCamera) String() string {
-	return fmt.Sprintf("eye:    %+v\ncenter: %+v\nup:     %+v\n", c.eye, c.center, c.up)
+	return fmt.Sprintf(`	eye:%v
+	center: %v
+	up:     %v
+	pitch, yaw: %v, %v`+"\n", c.eye, c.center, c.up, c.pitch, c.yaw)
 }
