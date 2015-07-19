@@ -18,28 +18,62 @@ import (
 
 const mouseSensitivity = 0.01
 
+const lineUnit = 1.0
+
 type Line struct {
 	*DynamicShape
 
-	offset int
-	pos    [5]float32
-
 	lastMove time.Duration
 	rate     time.Duration
+
+	lastTurn mgl.Vec3
+	position mgl.Vec3
+
+	angle   float32
+	turning bool
+	offset  int
 }
 
-func (line *Line) Tick(since time.Duration) {
+func (line *Line) Tick(since time.Duration, rotate float32) {
+	if rotate != 0 {
+		line.angle += rotate
+		line.turning = true
+	}
+
 	if line.lastMove+line.rate > since {
 		return
 	}
 
 	line.lastMove = since
-	line.pos[1] += 1
-	offset := len(line.vertices) / vertexDim
-	line.vertices = append(line.vertices, Quad(line.pos[0], line.pos[1], line.pos[2], line.pos[3], line.pos[4])...)
+
+	line.Add(line.angle)
+	line.Buffer(line.offset)
+}
+
+func (line *Line) Add(angle float32) {
+	// TODO: Angle
+	turning := line.turning || line.angle != angle
+	line.angle = angle
+
+	if turning {
+		line.lastTurn = line.position
+	}
+
+	p1 := line.lastTurn
+	p2 := line.position.Add(mgl.Vec3{lineUnit, lineUnit, 0})
+
+	quad := Quad(p1, p2)
+	line.position = line.position.Add(mgl.Vec3{0, lineUnit, 0})
+
+	if !turning && len(line.vertices) >= len(quad) {
+		line.vertices = append(line.vertices[len(line.vertices)-len(quad):], quad...)
+	} else {
+		line.offset = len(line.vertices) / vertexDim
+		line.vertices = append(line.vertices, quad...)
+	}
 	//e.shape.normals = append(e.shape.normals, []float32{1.0, 0.0, 0.0}...)
-	line.Buffer(offset)
-	line.offset++
+
+	line.turning = false
 }
 
 type Engine struct {
@@ -74,15 +108,11 @@ func (e *Engine) Start() {
 
 	e.line = &Line{
 		DynamicShape: shape,
-		rate:         time.Second / 10.0,
+		rate:         time.Second / 1.0,
 	}
 
-	pos := [5]float32{0, 0, 0, 1, 1}
-	shape.vertices = append(shape.vertices, Quad(pos[0], pos[1], pos[2], pos[3], pos[4])...)
-	//shape.normals = append(shape.normals, []float32{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}...)
-	//shape.vertices = cubeData
-
-	e.line.pos = pos
+	e.line.Add(0)
+	e.line.Add(0)
 	e.line.Init(6 * 4 * 1000)
 	e.line.Buffer(0)
 
@@ -116,7 +146,6 @@ func (e *Engine) Touch(t touch.Event, c config.Event) {
 		deltaX, deltaY := float32(e.dragOrigin.X-e.touchLoc.X), float32(e.dragOrigin.Y-e.touchLoc.Y)
 		e.camera.Rotate(mgl.Vec3{deltaY * mouseSensitivity, deltaX * mouseSensitivity, 0})
 		e.dragOrigin = e.touchLoc
-		fmt.Println(e.camera.String())
 	}
 }
 
@@ -136,7 +165,7 @@ func (e *Engine) Draw(c config.Event) {
 	//rotation := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
 	//e.scene.transform = &rotation
 
-	e.line.Tick(since)
+	e.line.Tick(since, 0)
 	e.scene.Draw()
 
 }

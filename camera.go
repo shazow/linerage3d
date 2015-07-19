@@ -55,8 +55,8 @@ func (c *EulerCamera) updateVectors() {
 // Rotate adjusts the direction vectors by a delta vector of {pitch, yaw, roll}.
 // Roll is ignored for now.
 func (c *EulerCamera) Rotate(delta mgl.Vec3) {
-	c.yaw += float64(delta.X())
-	c.pitch += float64(delta.Y())
+	c.yaw += float64(delta.Y())
+	c.pitch += float64(delta.X())
 
 	// Limit vertical rotation to avoid gimbal lock
 	if c.pitch > halfPi {
@@ -90,7 +90,7 @@ func (c *EulerCamera) Projection() mgl.Mat4 {
 
 // String returns a string representation of the camera for debugging.
 func (c *EulerCamera) String() string {
-	return fmt.Sprintf(`	eye:%v
+	return fmt.Sprintf(`Camera:	eye:%v
 	center: %v
 	up:     %v
 	pitch, yaw: %v, %v`+"\n", c.eye, c.center, c.up, c.pitch, c.yaw)
@@ -117,7 +117,7 @@ func (c *QuatCamera) Rotate(delta mgl.Vec3) {
 		q := mgl.QuatRotate(delta[1], AxisUp).Normalize()
 		c.rotation = q.Mul(c.rotation).Normalize()
 	}
-	// TODO: Do we care about roll?
+	// TODO: Roll
 }
 
 // RotateTo adjusts the yaw and pitch to face a point.
@@ -132,9 +132,8 @@ func (c *QuatCamera) Move(delta mgl.Vec3) {
 
 // View returns the transform matrix from world space into camera space
 func (c *QuatCamera) View() mgl.Mat4 {
+	// FIXME: Is there a way to get this matrix from the quat+position directly?
 	return mgl.LookAtV(c.position, c.position.Add(c.Center()), c.Up())
-	//p := c.position
-	//return mgl.Translate3D(p[0], p[1], p[2]).Mul4(c.rotation.Mat4()).Inv()
 }
 
 // Projection returns the projection matrix for the camera perspective
@@ -155,7 +154,7 @@ func (c *QuatCamera) Center() mgl.Vec3 {
 
 // String returns a string representation of the camera for debugging.
 func (c *QuatCamera) String() string {
-	return fmt.Sprintf(`	position: %v
+	return fmt.Sprintf(`Camera:	position: %v
 	rotation: %v
 	center:   %v
 	up:       %v`+"\n", c.position, c.rotation, c.Center(), c.Up())

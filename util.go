@@ -9,6 +9,8 @@ import (
 	_ "image/png"
 	"io/ioutil"
 
+	mgl "github.com/go-gl/mathgl/mgl32"
+
 	"golang.org/x/mobile/asset"
 	"golang.org/x/mobile/exp/gl/glutil"
 	"golang.org/x/mobile/gl"
@@ -86,15 +88,15 @@ func LoadTexture(name string) (tex gl.Texture, err error) {
 	return
 }
 
-func Quad(x, y, z, w, h float32) []float32 {
+func Quad(a mgl.Vec3, b mgl.Vec3) []float32 {
 	return []float32{
 		// First triangle
-		x + w, y + h, z, // Top Right
-		x, y + h, z, // Top Left
-		x, y, z, // Bottom Left
+		b.X(), b.Y(), b.Z(), // Top Right
+		a.X(), b.Y(), a.Z(), // Top Left
+		a.X(), a.Y(), a.Z(), // Bottom Left
 		// Second triangle
-		x + w, y, z, // Bottom Right
-		x + w, y + h, z, // Top Right
-		x, y, z, // Bottom Left
+		b.X(), a.Y(), b.Z(), // Bottom Right
+		b.X(), b.Y(), b.Z(), // Top Right
+		a.X(), a.Y(), a.Z(), // Bottom Left
 	}
 }
