@@ -109,16 +109,15 @@ func (c *QuatCamera) SetPerspective(fovy, aspect, near, far float32) {
 }
 
 func (c *QuatCamera) Rotate(delta mgl.Vec3) {
-	for i, amount := range delta[:] {
-		if amount == 0 {
-			continue
-		}
-		axis := mgl.Vec3{}
-		axis[i] = 1
-		q := mgl.QuatRotate(amount, axis).Normalize()
-		// TODO: Can we break this out to the end?
+	if delta[0] != 0 {
+		q := mgl.QuatRotate(delta[0], AxisRight).Normalize()
 		c.rotation = c.rotation.Mul(q).Normalize()
 	}
+	if delta[1] != 0 {
+		q := mgl.QuatRotate(delta[1], AxisUp).Normalize()
+		c.rotation = q.Mul(c.rotation).Normalize()
+	}
+	// TODO: Do we care about roll?
 }
 
 // RotateTo adjusts the yaw and pitch to face a point.
