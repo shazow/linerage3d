@@ -90,10 +90,17 @@ func (c *EulerCamera) Projection() mgl.Mat4 {
 
 // String returns a string representation of the camera for debugging.
 func (c *EulerCamera) String() string {
-	return fmt.Sprintf(`Camera:	eye:%v
+	return fmt.Sprintf(`Camera:
+	eye:%v
 	center: %v
 	up:     %v
 	pitch, yaw: %v, %v`+"\n", c.eye, c.center, c.up, c.pitch, c.yaw)
+}
+
+func NewQuatCamera() *QuatCamera {
+	return &QuatCamera{
+		rotation: mgl.QuatIdent(),
+	}
 }
 
 // QuatCamera is a Camera implementation using quaternion for rotation.
@@ -110,10 +117,12 @@ func (c *QuatCamera) SetPerspective(fovy, aspect, near, far float32) {
 
 func (c *QuatCamera) Rotate(delta mgl.Vec3) {
 	if delta[0] != 0 {
+		// Pitch (about the X axis)
 		q := mgl.QuatRotate(delta[0], AxisRight).Normalize()
 		c.rotation = c.rotation.Mul(q).Normalize()
 	}
 	if delta[1] != 0 {
+		// Yaw (about the Y axis)
 		q := mgl.QuatRotate(delta[1], AxisUp).Normalize()
 		c.rotation = q.Mul(c.rotation).Normalize()
 	}
@@ -122,12 +131,21 @@ func (c *QuatCamera) Rotate(delta mgl.Vec3) {
 
 // RotateTo adjusts the yaw and pitch to face a point.
 func (c *QuatCamera) RotateTo(center mgl.Vec3) {
-	c.rotation = mgl.QuatLookAtV(c.position, c.position.Add(center), AxisUp)
+	direction := center.Sub(c.position).Normalize()
+	right := direction.Cross(AxisUp)
+	up := right.Cross(direction)
+
+	c.rotation = mgl.QuatLookAtV(c.position, center, up)
 }
 
 // Move adjusts the position of the camera by a delta vector relative to the camera is facing.
 func (c *QuatCamera) Move(delta mgl.Vec3) {
 	c.position = c.position.Add(c.rotation.Rotate(delta))
+}
+
+// MoveTo adjusts the absolute position of the camera
+func (c *QuatCamera) MoveTo(position mgl.Vec3) {
+	c.position = position
 }
 
 // View returns the transform matrix from world space into camera space
@@ -154,7 +172,8 @@ func (c *QuatCamera) Center() mgl.Vec3 {
 
 // String returns a string representation of the camera for debugging.
 func (c *QuatCamera) String() string {
-	return fmt.Sprintf(`Camera:	position: %v
+	return fmt.Sprintf(`Camera:
+	position: %v
 	rotation: %v
 	center:   %v
 	up:       %v`+"\n", c.position, c.rotation, c.Center(), c.Up())

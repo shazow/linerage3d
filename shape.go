@@ -88,8 +88,8 @@ func (s *StaticShape) BytesOffset(n int) []byte {
 		wrote = append(wrote, v)
 	}
 
-	fmt.Printf("Wrote %d vertices: %d to %d \t", s.Len()-n, n, s.Len())
-	fmt.Println(wrote)
+	//fmt.Printf("Wrote %d vertices: %d to %d \t", s.Len()-n, n, s.Len())
+	//fmt.Println(wrote)
 
 	return buf.Bytes()
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"time"
 
@@ -18,7 +19,15 @@ import (
 
 const mouseSensitivity = 0.01
 
-const lineUnit = 1.0
+func NewLine(shape *DynamicShape) *Line {
+	return &Line{
+		DynamicShape: shape,
+
+		rate:   time.Second / 5.0,
+		height: 1.0,
+		length: 0.5,
+	}
+}
 
 type Line struct {
 	*DynamicShape
@@ -28,6 +37,8 @@ type Line struct {
 
 	lastTurn mgl.Vec3
 	position mgl.Vec3
+	height   float32
+	length   float32
 
 	angle   float32
 	turning bool
@@ -51,19 +62,27 @@ func (line *Line) Tick(since time.Duration, rotate float32) {
 }
 
 func (line *Line) Add(angle float32) {
-	// TODO: Angle
 	turning := line.turning || line.angle != angle
-	line.angle = angle
-
 	if turning {
+		line.angle = angle
 		line.lastTurn = line.position
 	}
 
-	p1 := line.lastTurn
-	p2 := line.position.Add(mgl.Vec3{lineUnit, lineUnit, 0})
+	// Rotate
+	sin, cos := float32(math.Sin(float64(angle))), float32(math.Cos(float64(angle)))
+	unit := mgl.Vec3{cos - sin, 0, sin + cos}
 
+	// Normalize and reset height
+	l := line.length / unit.Len()
+	unit = mgl.Vec3{unit[0] * l, line.height, unit[2] * l}
+
+	p1 := line.lastTurn
+	p2 := line.position.Add(unit)
 	quad := Quad(p1, p2)
-	line.position = line.position.Add(mgl.Vec3{0, lineUnit, 0})
+
+	// Discard height and save
+	p2[1] = 0
+	line.position = p2
 
 	if !turning && len(line.vertices) >= len(quad) {
 		line.vertices = append(line.vertices[len(line.vertices)-len(quad):], quad...)
@@ -100,16 +119,13 @@ func (e *Engine) Start() {
 		panic(fmt.Sprintln("LoadProgram failed:", err))
 	}
 
-	e.camera.Move(mgl.Vec3{3, 3, -10})
-	e.camera.RotateTo(mgl.Vec3{0, 0, 1})
+	e.camera.MoveTo(mgl.Vec3{0, 10, -3})
+	e.camera.RotateTo(mgl.Vec3{0, 0, 5})
 
 	shape := &DynamicShape{}
 	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
 
-	e.line = &Line{
-		DynamicShape: shape,
-		rate:         time.Second / 1.0,
-	}
+	e.line = NewLine(shape)
 
 	e.line.Add(0)
 	e.line.Add(0)
@@ -140,6 +156,7 @@ func (e *Engine) Touch(t touch.Event, c config.Event) {
 		e.dragging = true
 	} else if t.Type == touch.TypeEnd {
 		e.dragging = false
+		log.Println(e.camera.String())
 	}
 	e.touchLoc = t.Loc
 	if e.dragging {
@@ -162,23 +179,23 @@ func (e *Engine) Draw(c config.Event) {
 	//gl.SampleCoverage(4.0, false)
 
 	// Spinny!
-	//rotation := mgl.HomogRotate3D(float32(since.Seconds()), mgl.Vec3{0, 1, 0})
-	//e.scene.transform = &rotation
+	rotation := mgl.HomogRotate3D(float32(since.Seconds()), AxisFront)
+	e.scene.transform = &rotation
 
-	e.line.Tick(since, 0)
+	e.line.Tick(since, 0.005)
 	e.scene.Draw()
 
 }
 
 func main() {
-	camera := QuatCamera{}
-	shader := Shader{}
+	camera := NewQuatCamera()
+	shader := &Shader{}
 	engine := Engine{
-		shader: &shader,
-		camera: &camera,
+		shader: shader,
+		camera: camera,
 		scene: &Scene{
-			Camera: &camera,
-			Shader: &shader,
+			Camera: camera,
+			Shader: shader,
 
 			ambientColor: mgl.Vec3{0.5, 0.5, 0.5},
 		},
