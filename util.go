@@ -8,6 +8,7 @@ import (
 	image_draw "image/draw"
 	_ "image/png"
 	"io/ioutil"
+	"log"
 
 	mgl "github.com/go-gl/mathgl/mgl32"
 
@@ -40,6 +41,8 @@ func loadAsset(name string) ([]byte, error) {
 // LoadProgram reads shader sources from the asset repository, compiles, and
 // links them into a program.
 func LoadProgram(vertexAsset, fragmentAsset string) (p gl.Program, err error) {
+	log.Println("Loading shaders:", vertexAsset, fragmentAsset)
+
 	vertexSrc, err := loadAsset(vertexAsset)
 	if err != nil {
 		return
@@ -51,6 +54,7 @@ func LoadProgram(vertexAsset, fragmentAsset string) (p gl.Program, err error) {
 	}
 
 	p, err = glutil.CreateProgram(string(vertexSrc), string(fragmentSrc))
+	log.Println("Compiled shader program.")
 	return
 }
 

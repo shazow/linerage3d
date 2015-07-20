@@ -23,8 +23,8 @@ func (node *Node) String() string {
 }
 
 type Scene struct {
-	Camera
-	*Shader
+	// TODO: Add a shader registry instead
+	shader *Shader
 
 	ambientColor mgl.Vec3
 	lights       []Light
@@ -33,14 +33,15 @@ type Scene struct {
 }
 
 func (scene *Scene) String() string {
-	return fmt.Sprintf("%d nodes, %d lights, ambient %+v, camera:\n%s", len(scene.nodes), len(scene.lights), scene.ambientColor, scene.Camera)
+	return fmt.Sprintf("%d nodes, %d lights, ambient %+v", len(scene.nodes), len(scene.lights), scene.ambientColor)
 }
 
-func (scene *Scene) Draw() {
-	shader := scene.Shader
+func (scene *Scene) Draw(camera Camera) {
+	shader := scene.shader
+	shader.Bind()
 
 	// Setup MVP
-	projection, view := scene.Projection(), scene.View()
+	projection, view := camera.Projection(), camera.View()
 	gl.UniformMatrix4fv(shader.projection, projection[:])
 	gl.UniformMatrix4fv(shader.view, view[:])
 
@@ -49,9 +50,6 @@ func (scene *Scene) Draw() {
 	gl.Uniform3fv(shader.lightPosition, []float32{1, 1, 1})
 
 	for _, node := range scene.nodes {
-		// TODO: Get model position from Shape, then translate
-		//log.Printf("Drawing: %s", node.String())
-
 		model := transformModel(node.transform, scene.transform)
 		gl.UniformMatrix4fv(shader.model, model[:])
 

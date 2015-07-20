@@ -98,7 +98,6 @@ func (line *Line) Add(angle float32) {
 type Engine struct {
 	camera *QuatCamera
 	scene  *Scene
-	shader *Shader
 
 	started time.Time
 
@@ -110,15 +109,12 @@ type Engine struct {
 }
 
 func (e *Engine) Start() {
-	var err error
-
-	log.Println("Loading shaders...")
-
-	e.shader.program, err = LoadProgram("shader.v.glsl", "shader.f.glsl")
+	shader, err := NewShader("shader.v.glsl", "shader.f.glsl")
 	if err != nil {
-		panic(fmt.Sprintln("LoadProgram failed:", err))
+		fail(1, "Failed to load shaders:", err)
 	}
 
+	e.scene.shader = shader
 	e.camera.MoveTo(mgl.Vec3{0, 10, -3})
 	e.camera.RotateTo(mgl.Vec3{0, 0, 5})
 
@@ -132,16 +128,13 @@ func (e *Engine) Start() {
 	e.line.Init(6 * 4 * 1000)
 	e.line.Buffer(0)
 
-	gl.UseProgram(e.shader.program)
-	e.scene.Bind()
-
 	e.started = time.Now()
 
 	log.Println("Starting: ", e.scene.String())
 }
 
 func (e *Engine) Stop() {
-	gl.DeleteProgram(e.shader.program)
+	e.scene.shader.Close()
 	gl.DeleteBuffer(e.line.VBO)
 }
 
@@ -182,26 +175,27 @@ func (e *Engine) Draw(c config.Event) {
 	rotation := mgl.HomogRotate3D(float32(since.Seconds()), AxisFront)
 	e.scene.transform = &rotation
 
-	e.line.Tick(since, 0.005)
-	e.scene.Draw()
+	e.line.Tick(since, 0.009)
+
+	e.scene.Draw(e.camera)
 
 }
 
+func fail(code int, format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, args...)
+	os.Exit(code)
+}
+
 func main() {
+	log.SetOutput(os.Stdout)
+
 	camera := NewQuatCamera()
-	shader := &Shader{}
 	engine := Engine{
-		shader: shader,
 		camera: camera,
 		scene: &Scene{
-			Camera: camera,
-			Shader: shader,
-
 			ambientColor: mgl.Vec3{0.5, 0.5, 0.5},
 		},
 	}
-
-	log.SetOutput(os.Stdout)
 
 	app.Main(func(a app.App) {
 		var c config.Event

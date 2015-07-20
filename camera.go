@@ -40,14 +40,15 @@ func (c *EulerCamera) SetPerspective(fovy, aspect, near, far float32) {
 func (c *EulerCamera) updateVectors() {
 	// TODO: Read up on http://learnopengl.com/#!Getting-started/Camera
 	// Borrowed from:
-	// - https://github.com/mmchugh/planetary/blob/master/src/helpers/camera.cpp
 	// - https://github.com/JoeyDeVries/LearnOpenGL/blob/master/includes/learnopengl/camera.h
+	// - https://github.com/mmchugh/planetary/blob/master/src/helpers/camera.cpp
 	c.center = mgl.Vec3{
 		float32(math.Cos(c.pitch) * math.Cos(c.yaw)),
 		float32(math.Sin(c.pitch)),
 		float32(math.Cos(c.pitch) * math.Sin(c.yaw)),
 	}.Normalize()
 
+	// Reset the up vector
 	c.right = c.center.Cross(AxisUp).Normalize()
 	c.up = c.right.Cross(c.center)
 }
