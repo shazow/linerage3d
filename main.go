@@ -151,7 +151,7 @@ func (e *Engine) Config(new, old config.Event) {
 }
 
 func (e *Engine) Touch(t touch.Event, c config.Event) {
-	if t.Type == touch.TypeStart {
+	if t.Type == touch.TypeBegin {
 		e.dragOrigin = t.Loc
 		e.dragging = true
 	} else if t.Type == touch.TypeEnd {
