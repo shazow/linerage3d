@@ -22,9 +22,35 @@ func (node *Node) String() string {
 	return fmt.Sprintf("<Shape of %d vertices; transform: %v>", node.Len(), node.transform)
 }
 
+type Skybox struct {
+	shape  *StaticShape
+	shader *Shader
+}
+
+func (skybox *Skybox) Draw(camera Camera) {
+	shader := skybox.shader
+	shader.Bind()
+
+	gl.DepthMask(false)
+
+	projection, view := camera.Projection(), camera.View().Mat3().Mat4()
+	gl.UniformMatrix4fv(shader.projection, projection[:])
+	gl.UniformMatrix4fv(shader.view, view[:])
+
+	node := skybox.shape
+	//gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_CUBE_MAP, node.glTex)
+	node.EnableAttrib(shader.vertCoord, shader.vertNormal, shader.vertTexCoord)
+	gl.DrawArrays(gl.TRIANGLES, 0, node.Len())
+	node.DisableAttrib(shader.vertCoord, shader.vertNormal, shader.vertTexCoord)
+
+	gl.DepthMask(true)
+}
+
 type Scene struct {
 	// TODO: Add a shader registry instead
 	shader *Shader
+	skybox *Skybox
 
 	ambientColor mgl.Vec3
 	lights       []Light
@@ -37,6 +63,10 @@ func (scene *Scene) String() string {
 }
 
 func (scene *Scene) Draw(camera Camera) {
+	if scene.skybox != nil {
+		scene.skybox.Draw(camera)
+	}
+
 	shader := scene.shader
 	shader.Bind()
 

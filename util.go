@@ -54,13 +54,12 @@ func LoadProgram(vertexAsset, fragmentAsset string) (p gl.Program, err error) {
 	}
 
 	p, err = glutil.CreateProgram(string(vertexSrc), string(fragmentSrc))
-	log.Println("Compiled shader program.")
 	return
 }
 
-// LoadTexture reads and decodes an image from the asset repository and creates
+// LoadTexture2D reads and decodes an image from the asset repository and creates
 // a texture object based on the full dimensions of the image.
-func LoadTexture(name string) (tex gl.Texture, err error) {
+func LoadTexture2D(name string) (tex gl.Texture, err error) {
 	imgFile, err := asset.Open(name)
 	if err != nil {
 		return
@@ -88,6 +87,48 @@ func LoadTexture(name string) (tex gl.Texture, err error) {
 		gl.RGBA,
 		gl.UNSIGNED_BYTE,
 		rgba.Pix)
+	return
+}
+
+// LoadTextureCube reads and decodes an image from the asset repository and creates
+// a texture cube map object based on the full dimensions of the image.
+func LoadTextureCube(name string) (tex gl.Texture, err error) {
+	imgFile, err := asset.Open(name)
+	if err != nil {
+		return
+	}
+	img, _, err := image.Decode(imgFile)
+	if err != nil {
+		return
+	}
+
+	rgba := image.NewRGBA(img.Bounds())
+	image_draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, image_draw.Src)
+
+	tex = gl.CreateTexture()
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_CUBE_MAP, tex)
+
+	target := gl.TEXTURE_CUBE_MAP_POSITIVE_X
+	for i := 0; i < 6; i++ {
+		// TODO: Load atlas, not the same image
+		gl.TexImage2D(
+			gl.Enum(target+i),
+			0,
+			rgba.Rect.Size().X,
+			rgba.Rect.Size().Y,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			rgba.Pix,
+		)
+	}
+
+	gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	// Not available in GLES 2.0 :(
+	//gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
 
 	return
 }

@@ -109,12 +109,30 @@ type Engine struct {
 }
 
 func (e *Engine) Start() {
-	shader, err := NewShader("shader.v.glsl", "shader.f.glsl")
+	var err error
+
+	// Setup scene shader
+	e.scene.shader, err = NewShader("shader.v.glsl", "shader.f.glsl")
 	if err != nil {
 		fail(1, "Failed to load shaders:", err)
 	}
 
-	e.scene.shader = shader
+	// Setup skybox
+	skyboxShape := &StaticShape{
+		vertices: skyboxVertices,
+	}
+	skyboxShape.Init()
+	skyboxShape.Buffer()
+	skyboxShape.glTex, err = LoadTextureCube("square.png")
+	if err != nil {
+		fail(1, "Failed to load texture:", err)
+	}
+	e.scene.skybox = &Skybox{shape: skyboxShape}
+	e.scene.skybox.shader, err = NewShader("skybox.v.glsl", "skybox.f.glsl")
+	if err != nil {
+		fail(1, "Failed to load shaders:", err)
+	}
+
 	e.camera.MoveTo(mgl.Vec3{0, 10, -3})
 	e.camera.RotateTo(mgl.Vec3{0, 0, 5})
 
@@ -163,9 +181,9 @@ func (e *Engine) Draw(c config.Event) {
 	since := time.Now().Sub(e.started)
 
 	gl.ClearColor(0, 0, 0, 1)
-	gl.Clear(gl.COLOR_BUFFER_BIT)
-	//gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	//gl.Enable(gl.DEPTH_TEST)
+	//gl.Clear(gl.COLOR_BUFFER_BIT)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	gl.Enable(gl.DEPTH_TEST)
 
 	//gl.Disable(gl.CULL_FACE)
 	//gl.DepthFunc(gl.LESS)

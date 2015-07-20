@@ -3,7 +3,7 @@ package main
 import "golang.org/x/mobile/gl"
 
 func NewShader(vertAsset, fragAsset string) (*Shader, error) {
-	program, err := LoadProgram("shader.v.glsl", "shader.f.glsl")
+	program, err := LoadProgram(vertAsset, fragAsset)
 	if err != nil {
 		return nil, err
 	}
