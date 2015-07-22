@@ -29,7 +29,7 @@ type Skybox struct {
 
 func (skybox *Skybox) Draw(camera Camera) {
 	shader := skybox.shader
-	shader.Bind()
+	shader.Use()
 
 	gl.DepthMask(false)
 
@@ -68,7 +68,7 @@ func (scene *Scene) Draw(camera Camera) {
 	}
 
 	shader := scene.shader
-	shader.Bind()
+	shader.Use()
 
 	// Setup MVP
 	projection, view := camera.Projection(), camera.View()

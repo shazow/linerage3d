@@ -28,7 +28,7 @@ type Shader struct {
 	lightIntensities gl.Uniform
 }
 
-func (shader *Shader) Bind() {
+func (shader *Shader) Use() {
 	gl.UseProgram(shader.program)
 
 	shader.vertCoord = gl.GetAttribLocation(shader.program, "vertCoord")
