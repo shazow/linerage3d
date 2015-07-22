@@ -17,15 +17,60 @@ import (
 	"golang.org/x/mobile/gl"
 )
 
-// EncodeObject converts float32 vertices into a LittleEndian byte array.
-func EncodeObject(vertices ...[]float32) []byte {
+type obj struct {
+	slice []float32
+	dim   int
+}
+
+func (o *obj) Slice() []float32 {
+	return o.slice
+}
+
+func (o *obj) Dim() int {
+	return o.dim
+}
+
+func NewObjectData(slice []float32, dim int) ObjectData {
+	return &obj{
+		slice: slice,
+		dim:   dim,
+	}
+}
+
+type ObjectData interface {
+	Slice() []float32
+	Dim() int
+}
+
+// EncodeObjects converts float32 vertices into a LittleEndian byte array.
+// Offset and length are based on the number of rows per dimension.
+func EncodeObjects(offset int, length int, objects ...ObjectData) []byte {
+	log.Println("EncodeObjects:", offset, length, objects)
+
+	// TODO: Pre-allocate?
+	/*
+		dimSum := 0 // yum!
+		for _, obj := range objects {
+			dimSum += obj.Dim()
+		}
+		v := make([]float32, dimSum*length)
+	*/
+
 	buf := bytes.Buffer{}
-	for _, v := range vertices {
-		err := binary.Write(&buf, binary.LittleEndian, v)
-		if err != nil {
+
+	for i := offset; i < length; i++ {
+		v := []float32{}
+		for _, obj := range objects {
+			v = append(v, obj.Slice()[i*obj.Dim():(i+1)*obj.Dim()]...)
+		}
+
+		if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {
 			panic(fmt.Sprintln("binary.Write failed:", err))
 		}
 	}
+
+	//fmt.Printf("Wrote %d vertices: %d to %d \t", shape.Len()-n, n, shape.Len())
+	//fmt.Println(wrote)
 
 	return buf.Bytes()
 }
@@ -41,7 +86,7 @@ func loadAsset(name string) ([]byte, error) {
 // LoadProgram reads shader sources from the asset repository, compiles, and
 // links them into a program.
 func LoadProgram(vertexAsset, fragmentAsset string) (p gl.Program, err error) {
-	log.Println("Loading shaders:", vertexAsset, fragmentAsset)
+	log.Println("LoadProgram:", vertexAsset, fragmentAsset)
 
 	vertexSrc, err := loadAsset(vertexAsset)
 	if err != nil {

@@ -1,12 +1,6 @@
 package main
 
-import (
-	"bytes"
-	"encoding/binary"
-	"fmt"
-
-	"golang.org/x/mobile/gl"
-)
+import "golang.org/x/mobile/gl"
 
 const vertexDim = 3
 const textureDim = 2
@@ -77,30 +71,16 @@ func (s *StaticShape) Len() int {
 }
 
 func (shape *StaticShape) BytesOffset(n int) []byte {
-	buf := bytes.Buffer{}
-
-	wrote := [][]float32{}
-
-	for i := n; i < shape.Len(); i++ {
-		v := shape.vertices[i*vertexDim : i*vertexDim+3]
-		if len(shape.textures) > 0 {
-			v = append(v, shape.textures[i*textureDim:(i+1)*textureDim]...)
-		}
-		if len(shape.normals) > 0 {
-			v = append(v, shape.normals[i*normalDim:(i+1)*normalDim]...)
-		}
-
-		if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {
-			panic(fmt.Sprintln("binary.Write failed:", err))
-		}
-
-		wrote = append(wrote, v)
+	objects := []ObjectData{NewObjectData(shape.vertices, vertexDim)}
+	if len(shape.textures) > 0 {
+		objects = append(objects, NewObjectData(shape.textures, textureDim))
+	}
+	if len(shape.normals) > 0 {
+		objects = append(objects, NewObjectData(shape.normals, normalDim))
 	}
 
-	//fmt.Printf("Wrote %d vertices: %d to %d \t", shape.Len()-n, n, shape.Len())
-	//fmt.Println(wrote)
-
-	return buf.Bytes()
+	length := len(shape.vertices) / vertexDim
+	return EncodeObjects(n, length, objects...)
 }
 
 func (shape *StaticShape) Bytes() []byte {
@@ -121,6 +101,7 @@ func (shape *StaticShape) Buffer() {
 	gl.BufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
 
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.EBI)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW)
 }
 
 func NewDynamicShape(bufSize int) *DynamicShape {

@@ -1,10 +1,13 @@
-BINARY = "gogame"
+BINARY = "linerage3d"
 
 $(BINARY): *.go
 	go build .
 
-run:
-	go run *.go
+run: $(BINARY)
+	./$(BINARY)
+
+test:
+	go test
 
 clean:
 	rm $(BINARY)
