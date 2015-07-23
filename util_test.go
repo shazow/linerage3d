@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -78,4 +79,21 @@ func TestEncodeObjects(t *testing.T) {
 	if !reflect.DeepEqual(vertices, decoded) {
 		t.Error("Failed to encode:", decoded)
 	}
+}
+
+func TestAppendIndexed(t *testing.T) {
+	idx := []int{}
+	verts := AppendIndexed([]float32{}, &idx, []float32{1, 1, 1, 2, 2, 2, 1, 1, 1, 2, 2, 2, 1, 1, 1}...)
+	expectIdx := []int{1, 2}
+	if !reflect.DeepEqual(idx, expectIdx) {
+		t.Error("got %q; want %q", idx, expectIdx)
+	}
+	expectVerts := []float32{1, 1, 1, 2, 2, 2}
+	if !reflect.DeepEqual(verts, expectVerts) {
+		t.Error("got %q; want %q", verts, expectVerts)
+	}
+
+	idx = []int{}
+	verts = AppendIndexed([]float32{}, &idx, skyboxVertices...)
+	fmt.Println(idx, verts)
 }

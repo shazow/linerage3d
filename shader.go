@@ -2,47 +2,55 @@ package main
 
 import "golang.org/x/mobile/gl"
 
-func NewShader(vertAsset, fragAsset string) (*Shader, error) {
+type Shader interface {
+	Use()
+	Close()
+	Attrib(string) gl.Attrib
+	Uniform(string) gl.Uniform
+}
+
+func NewShader(vertAsset, fragAsset string) (Shader, error) {
 	program, err := LoadProgram(vertAsset, fragAsset)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Shader{
-		program: program,
+	return &shader{
+		program:  program,
+		attribs:  map[string]gl.Attrib{},
+		uniforms: map[string]gl.Uniform{},
 	}, nil
 }
 
-type Shader struct {
-	program      gl.Program
-	vertCoord    gl.Attrib
-	vertNormal   gl.Attrib
-	vertTexCoord gl.Attrib
+type shader struct {
+	program gl.Program
 
-	projection   gl.Uniform
-	view         gl.Uniform
-	model        gl.Uniform
-	normalMatrix gl.Uniform
-
-	lightPosition    gl.Uniform
-	lightIntensities gl.Uniform
+	attribs  map[string]gl.Attrib
+	uniforms map[string]gl.Uniform
 }
 
-func (shader *Shader) Use() {
+func (shader *shader) Attrib(name string) gl.Attrib {
+	v, ok := shader.attribs[name]
+	if !ok {
+		v = gl.GetAttribLocation(shader.program, name)
+		shader.attribs[name] = v
+	}
+	return v
+}
+
+func (shader *shader) Uniform(name string) gl.Uniform {
+	v, ok := shader.uniforms[name]
+	if !ok {
+		v = gl.GetUniformLocation(shader.program, name)
+		shader.uniforms[name] = v
+	}
+	return v
+}
+
+func (shader *shader) Use() {
 	gl.UseProgram(shader.program)
-
-	shader.vertCoord = gl.GetAttribLocation(shader.program, "vertCoord")
-	shader.vertNormal = gl.GetAttribLocation(shader.program, "vertNormal")
-
-	shader.projection = gl.GetUniformLocation(shader.program, "projection")
-	shader.view = gl.GetUniformLocation(shader.program, "view")
-	shader.model = gl.GetUniformLocation(shader.program, "model")
-	shader.normalMatrix = gl.GetUniformLocation(shader.program, "normalMatrix")
-
-	shader.lightIntensities = gl.GetUniformLocation(shader.program, "lightIntensities")
-	shader.lightPosition = gl.GetUniformLocation(shader.program, "lightPosition")
 }
 
-func (shader *Shader) Close() {
+func (shader *shader) Close() {
 	gl.DeleteProgram(shader.program)
 }

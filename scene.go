@@ -23,33 +23,36 @@ func (node *Node) String() string {
 }
 
 type Skybox struct {
-	shape  *StaticShape
-	shader *Shader
+	*StaticShape
+	shader Shader
 }
 
-func (skybox *Skybox) Draw(camera Camera) {
-	shader := skybox.shader
+func (shape *Skybox) Draw(camera Camera) {
+	shader := shape.shader
 	shader.Use()
 
 	gl.DepthMask(false)
 
 	projection, view := camera.Projection(), camera.View().Mat3().Mat4()
-	gl.UniformMatrix4fv(shader.projection, projection[:])
-	gl.UniformMatrix4fv(shader.view, view[:])
+	gl.UniformMatrix4fv(shader.Uniform("projection"), projection[:])
+	gl.UniformMatrix4fv(shader.Uniform("view"), view[:])
 
-	node := skybox.shape
-	//gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_CUBE_MAP, node.glTex)
-	node.EnableAttrib(shader.vertCoord, shader.vertNormal, shader.vertTexCoord)
-	gl.DrawArrays(gl.TRIANGLES, 0, node.Len())
-	node.DisableAttrib(shader.vertCoord, shader.vertNormal, shader.vertTexCoord)
+	gl.BindTexture(gl.TEXTURE_CUBE_MAP, shape.Texture)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, shape.VBO)
+	gl.EnableVertexAttribArray(shader.Attrib("vertCoord"))
+	gl.VertexAttribPointer(shader.Attrib("vertCoord"), vertexDim, gl.FLOAT, false, shape.Stride(), 0)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.EBI)
+	gl.DrawArrays(gl.TRIANGLES, 0, shape.Len())
+	gl.DisableVertexAttribArray(shader.Attrib("vertCoord"))
 
 	gl.DepthMask(true)
 }
 
 type Scene struct {
 	// TODO: Add a shader registry instead
-	shader *Shader
+	shader Shader
 	skybox *Skybox
 
 	ambientColor mgl.Vec3
@@ -72,23 +75,21 @@ func (scene *Scene) Draw(camera Camera) {
 
 	// Setup MVP
 	projection, view := camera.Projection(), camera.View()
-	gl.UniformMatrix4fv(shader.projection, projection[:])
-	gl.UniformMatrix4fv(shader.view, view[:])
+	gl.UniformMatrix4fv(shader.Uniform("projection"), projection[:])
+	gl.UniformMatrix4fv(shader.Uniform("view"), view[:])
 
 	// Light
-	gl.Uniform3fv(shader.lightIntensities, []float32{1, 1, 1})
-	gl.Uniform3fv(shader.lightPosition, []float32{1, 1, 1})
+	gl.Uniform3fv(shader.Uniform("lightIntensities"), []float32{1, 1, 1})
+	gl.Uniform3fv(shader.Uniform("lightPosition"), []float32{1, 1, 1})
 
 	for _, node := range scene.nodes {
 		model := transformModel(node.transform, scene.transform)
-		gl.UniformMatrix4fv(shader.model, model[:])
+		gl.UniformMatrix4fv(shader.Uniform("model"), model[:])
 
 		normal := model.Mul4(view).Inv().Transpose()
-		gl.UniformMatrix4fv(shader.normalMatrix, normal[:])
+		gl.UniformMatrix4fv(shader.Uniform("normalMatrix"), normal[:])
 
-		node.EnableAttrib(shader.vertCoord, shader.vertNormal, shader.vertTexCoord)
-		gl.DrawArrays(gl.TRIANGLES, 0, node.Len())
-		node.DisableAttrib(shader.vertCoord, shader.vertNormal, shader.vertTexCoord)
+		node.Draw(shader, camera)
 	}
 }
 

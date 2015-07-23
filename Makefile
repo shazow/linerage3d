@@ -1,7 +1,7 @@
 BINARY = "linerage3d"
 
 $(BINARY): *.go
-	go build .
+	go build $(TAGS) .
 
 run: $(BINARY)
 	./$(BINARY)

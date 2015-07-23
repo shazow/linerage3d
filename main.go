@@ -120,12 +120,13 @@ func (e *Engine) Start() {
 	// Setup skybox
 	skyboxShape := NewStaticShape()
 	skyboxShape.vertices = skyboxVertices
+	skyboxShape.indices = skyboxIndices
 	skyboxShape.Buffer()
-	skyboxShape.glTex, err = LoadTextureCube("square.png")
+	skyboxShape.Texture, err = LoadTextureCube("square.png")
 	if err != nil {
 		fail(1, "Failed to load texture:", err)
 	}
-	e.scene.skybox = &Skybox{shape: skyboxShape}
+	e.scene.skybox = &Skybox{StaticShape: skyboxShape}
 	e.scene.skybox.shader, err = NewShader("skybox.v.glsl", "skybox.f.glsl")
 	if err != nil {
 		fail(1, "Failed to load shaders:", err)
@@ -135,7 +136,7 @@ func (e *Engine) Start() {
 	e.camera.RotateTo(mgl.Vec3{0, 0, 5})
 
 	shape := NewDynamicShape(6 * 4 * 1000)
-	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
+	//e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
 
 	e.line = NewLine(shape)
 

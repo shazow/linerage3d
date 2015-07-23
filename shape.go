@@ -11,8 +11,7 @@ type Shape interface {
 	Close()
 	Stride() int
 	Len() int
-	EnableAttrib(gl.Attrib, gl.Attrib, gl.Attrib)
-	DisableAttrib(gl.Attrib, gl.Attrib, gl.Attrib)
+	Draw(Shader, Camera)
 }
 
 func NewStaticShape() *StaticShape {
@@ -23,34 +22,35 @@ func NewStaticShape() *StaticShape {
 }
 
 type StaticShape struct {
-	VBO   gl.Buffer
-	EBI   gl.Buffer
-	glTex gl.Texture
+	VBO     gl.Buffer
+	EBI     gl.Buffer
+	Texture gl.Texture
 
 	vertices []float32 // Vec3
 	textures []float32 // Vec2 (UV)
 	normals  []float32 // Vec3
-	indexes  []float32 // Vec3
+	indices  []float32
 }
 
-func (shape *StaticShape) EnableAttrib(vertex gl.Attrib, normal gl.Attrib, texture gl.Attrib) {
+func (shape *StaticShape) Draw(shader Shader, camera Camera) {
 	gl.BindBuffer(gl.ARRAY_BUFFER, shape.VBO)
 	stride := shape.Stride()
 
-	gl.EnableVertexAttribArray(vertex)
-	gl.VertexAttribPointer(vertex, vertexDim, gl.FLOAT, false, stride, 0)
+	gl.EnableVertexAttribArray(shader.Attrib("vertCoord"))
+	gl.VertexAttribPointer(shader.Attrib("vertCoord"), vertexDim, gl.FLOAT, false, stride, 0)
 
 	if len(shape.normals) > 0 {
-		gl.EnableVertexAttribArray(normal)
-		gl.VertexAttribPointer(normal, normalDim, gl.FLOAT, false, stride, vertexDim*vecSize)
+		gl.EnableVertexAttribArray(shader.Attrib("normal"))
+		gl.VertexAttribPointer(shader.Attrib("vertNormal"), normalDim, gl.FLOAT, false, stride, vertexDim*vecSize)
 	}
 	// TODO: texture
-}
 
-func (shape *StaticShape) DisableAttrib(vertex gl.Attrib, normal gl.Attrib, texture gl.Attrib) {
-	gl.DisableVertexAttribArray(vertex)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.EBI)
+	gl.DrawArrays(gl.TRIANGLES, 0, shape.Len())
+
+	gl.DisableVertexAttribArray(shader.Attrib("vertCoord"))
 	if len(shape.normals) > 0 {
-		gl.DisableVertexAttribArray(normal)
+		gl.DisableVertexAttribArray(shader.Attrib("vertNormal"))
 	}
 	// TODO: texture
 }
@@ -93,15 +93,17 @@ func (shape *StaticShape) Close() {
 }
 
 func (shape *StaticShape) Buffer() {
-	gl.BindBuffer(gl.ARRAY_BUFFER, shape.VBO)
 	data := shape.Bytes()
-	if len(data) == 0 {
-		return
+	if len(data) > 0 {
+		gl.BindBuffer(gl.ARRAY_BUFFER, shape.VBO)
+		gl.BufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
 	}
-	gl.BufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
 
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.EBI)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW)
+	data = EncodeObjects(0, len(shape.indices)/vertexDim, NewObjectData(shape.indices, vertexDim))
+	if len(data) > 0 {
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.EBI)
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW)
+	}
 }
 
 func NewDynamicShape(bufSize int) *DynamicShape {

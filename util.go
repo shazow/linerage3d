@@ -59,14 +59,13 @@ func EncodeObjects(offset int, length int, objects ...ObjectData) []byte {
 	buf := bytes.Buffer{}
 
 	for i := offset; i < length; i++ {
-		v := []float32{}
 		for _, obj := range objects {
-			v = append(v, obj.Slice()[i*obj.Dim():(i+1)*obj.Dim()]...)
+			slice := obj.Slice()[i*obj.Dim() : (i+1)*obj.Dim()]
+			if err := binary.Write(&buf, binary.LittleEndian, slice); err != nil {
+				panic(fmt.Sprintln("binary.Write failed:", err))
+			}
 		}
 
-		if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {
-			panic(fmt.Sprintln("binary.Write failed:", err))
-		}
 	}
 
 	//fmt.Printf("Wrote %d vertices: %d to %d \t", shape.Len()-n, n, shape.Len())
@@ -176,6 +175,36 @@ func LoadTextureCube(name string) (tex gl.Texture, err error) {
 	//gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
 
 	return
+}
+
+func AppendIndexed(slice []float32, idx *[]int, vertices ...float32) []float32 {
+	// FIXME: This is the wrong algo.
+	idxMap := map[[vertexDim]float32]int{}
+	r := slice
+
+	var vert [3]float32
+	for _, pos := range *idx {
+		vert[0] = slice[pos]
+		vert[1] = slice[pos+1]
+		vert[2] = slice[pos+2]
+		idxMap[vert] = pos
+	}
+
+	for i := 0; i < len(vertices); i += vertexDim {
+		vert[0] = vertices[i]
+		vert[1] = vertices[i+1]
+		vert[2] = vertices[i+2]
+		_, ok := idxMap[vert]
+		if ok {
+			continue
+		}
+		r = append(r, vert[:]...)
+		pos := len(r) / vertexDim
+		idxMap[vert] = pos
+		*idx = append(*idx, pos)
+	}
+
+	return r
 }
 
 func Quad(a mgl.Vec3, b mgl.Vec3) []float32 {
