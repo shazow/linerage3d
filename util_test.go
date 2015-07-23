@@ -24,9 +24,29 @@ func DecodeObjects(b []byte) ([]float32, error) {
 	return r, nil
 }
 
+func TestDimSlice(t *testing.T) {
+	s := NewDimSlice(3, []float32{1, 2, 3, 4, 5, 6})
+
+	if a, b := s.Dim(), 3; a != b {
+		t.Error("got %q; want %q", a, b)
+	}
+	if a, b := s.Slice(1, 4), []float32{2, 3, 4}; !reflect.DeepEqual(a, b) {
+		t.Error("got %q; want %q", a, b)
+	}
+
+	s = NewDimSlice(2, []uint8{1, 2, 3, 4, 5, 6})
+
+	if a, b := s.Dim(), 2; a != b {
+		t.Error("got %q; want %q", a, b)
+	}
+	if a, b := s.Slice(1, 4), []uint8{2, 3, 4}; !reflect.DeepEqual(a, b) {
+		t.Error("got %q; want %q", a, b)
+	}
+}
+
 func TestEncodeObjects(t *testing.T) {
 	vertices := []float32{42}
-	bytes := EncodeObjects(0, 1, NewObjectData(vertices, 1))
+	bytes := EncodeObjects(0, 1, NewDimSlice(1, vertices))
 	if len(bytes) != 4 {
 		t.Error("encoded float32 slice is the wrong size:", len(bytes), "!=", 4)
 	}
@@ -39,7 +59,7 @@ func TestEncodeObjects(t *testing.T) {
 	}
 
 	vertices = []float32{42, 123}
-	bytes = EncodeObjects(0, 1, NewObjectData(vertices, 2))
+	bytes = EncodeObjects(0, 1, NewDimSlice(2, vertices))
 	if len(bytes) != 8 {
 		t.Error("encoded float32 slice is the wrong size:", len(bytes), "!=", 8)
 	}
@@ -52,7 +72,7 @@ func TestEncodeObjects(t *testing.T) {
 	}
 
 	vertices = []float32{42, 123}
-	bytes = EncodeObjects(0, 2, NewObjectData(vertices, 1))
+	bytes = EncodeObjects(0, 2, NewDimSlice(1, vertices))
 	if len(bytes) != 8 {
 		t.Error("encoded float32 slice is the wrong size:", len(bytes), "!=", 8)
 	}
@@ -66,7 +86,7 @@ func TestEncodeObjects(t *testing.T) {
 
 	dim := 3
 	vertices = []float32{1, 2, 3, 4, 5, 6, 7, 8, 9}
-	objects := []ObjectData{NewObjectData(vertices, dim)}
+	objects := []DimSlicer{NewDimSlice(dim, vertices)}
 	bytes = EncodeObjects(0, len(vertices)/dim, objects...)
 	if len(bytes) != 4*len(vertices) {
 		t.Error("encoded float32 slice is the wrong size:", len(bytes), "!=", 4*len(vertices))
@@ -96,4 +116,48 @@ func TestAppendIndexed(t *testing.T) {
 	idx = []int{}
 	verts = AppendIndexed([]float32{}, &idx, skyboxVertices...)
 	fmt.Println(idx, verts)
+}
+
+var unindexedCube = []float32{
+	-1.0, 1.0, -1.0,
+	-1.0, -1.0, -1.0,
+	1.0, -1.0, -1.0,
+	1.0, -1.0, -1.0,
+	1.0, 1.0, -1.0,
+	-1.0, 1.0, -1.0,
+
+	-1.0, -1.0, 1.0,
+	-1.0, -1.0, -1.0,
+	-1.0, 1.0, -1.0,
+	-1.0, 1.0, -1.0,
+	-1.0, 1.0, 1.0,
+	-1.0, -1.0, 1.0,
+
+	1.0, -1.0, -1.0,
+	1.0, -1.0, 1.0,
+	1.0, 1.0, 1.0,
+	1.0, 1.0, 1.0,
+	1.0, 1.0, -1.0,
+	1.0, -1.0, -1.0,
+
+	-1.0, -1.0, 1.0,
+	-1.0, 1.0, 1.0,
+	1.0, 1.0, 1.0,
+	1.0, 1.0, 1.0,
+	1.0, -1.0, 1.0,
+	-1.0, -1.0, 1.0,
+
+	-1.0, 1.0, -1.0,
+	1.0, 1.0, -1.0,
+	1.0, 1.0, 1.0,
+	1.0, 1.0, 1.0,
+	-1.0, 1.0, 1.0,
+	-1.0, 1.0, -1.0,
+
+	-1.0, -1.0, -1.0,
+	-1.0, -1.0, 1.0,
+	1.0, -1.0, -1.0,
+	1.0, -1.0, -1.0,
+	-1.0, -1.0, 1.0,
+	1.0, -1.0, 1.0,
 }

@@ -44,7 +44,7 @@ func (shape *Skybox) Draw(camera Camera) {
 	gl.VertexAttribPointer(shader.Attrib("vertCoord"), vertexDim, gl.FLOAT, false, shape.Stride(), 0)
 
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.EBI)
-	gl.DrawArrays(gl.TRIANGLES, 0, shape.Len())
+	gl.DrawElements(gl.TRIANGLES, len(shape.indices), gl.UNSIGNED_SHORT, 0)
 	gl.DisableVertexAttribArray(shader.Attrib("vertCoord"))
 
 	gl.DepthMask(true)

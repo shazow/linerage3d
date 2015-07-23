@@ -17,34 +17,40 @@ import (
 	"golang.org/x/mobile/gl"
 )
 
-type obj struct {
-	slice []float32
+type dimslice_float32 struct {
 	dim   int
+	slice []float32
 }
 
-func (o *obj) Slice() []float32 {
-	return o.slice
+func (o *dimslice_float32) Slice(i, j int) interface{} { return o.slice[i:j] }
+func (o *dimslice_float32) Dim() int                   { return o.dim }
+
+type dimslice_uint8 struct {
+	dim   int
+	slice []uint8
 }
 
-func (o *obj) Dim() int {
-	return o.dim
-}
+func (o *dimslice_uint8) Slice(i, j int) interface{} { return o.slice[i:j] }
+func (o *dimslice_uint8) Dim() int                   { return o.dim }
 
-func NewObjectData(slice []float32, dim int) ObjectData {
-	return &obj{
-		slice: slice,
-		dim:   dim,
+func NewDimSlice(dim int, slice interface{}) DimSlicer {
+	switch slice := slice.(type) {
+	case []float32:
+		return &dimslice_float32{dim, slice}
+	case []uint8:
+		return &dimslice_uint8{dim, slice}
 	}
+	return nil
 }
 
-type ObjectData interface {
-	Slice() []float32
+type DimSlicer interface {
+	Slice(int, int) interface{}
 	Dim() int
 }
 
 // EncodeObjects converts float32 vertices into a LittleEndian byte array.
 // Offset and length are based on the number of rows per dimension.
-func EncodeObjects(offset int, length int, objects ...ObjectData) []byte {
+func EncodeObjects(offset int, length int, objects ...DimSlicer) []byte {
 	log.Println("EncodeObjects:", offset, length, objects)
 
 	// TODO: Pre-allocate?
@@ -60,8 +66,8 @@ func EncodeObjects(offset int, length int, objects ...ObjectData) []byte {
 
 	for i := offset; i < length; i++ {
 		for _, obj := range objects {
-			slice := obj.Slice()[i*obj.Dim() : (i+1)*obj.Dim()]
-			if err := binary.Write(&buf, binary.LittleEndian, slice); err != nil {
+			data := obj.Slice(i*obj.Dim(), (i+1)*obj.Dim())
+			if err := binary.Write(&buf, binary.LittleEndian, data); err != nil {
 				panic(fmt.Sprintln("binary.Write failed:", err))
 			}
 		}

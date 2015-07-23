@@ -46,4 +46,22 @@ var skyboxVertices = []float32{
 	1.0, -1.0, 1.0,
 }
 
-var skyboxIndices = []float32{}
+var skyboxIndices = []uint8{}
+
+/*
+
+var skyboxVertices = []float32{
+	-1.0, -1.0, 1.0,
+	1.0, -1.0, 1.0,
+	-1.0, 1.0, 1.0,
+	1.0, 1.0, 1.0,
+	-1.0, -1.0, -1.0,
+	1.0, -1.0, -1.0,
+	-1.0, 1.0, -1.0,
+	1.0, 1.0, -1.0,
+}
+
+var skyboxIndices = []uint8{
+	0, 1, 2, 3, 7, 1, 5, 4, 7, 6, 2, 4, 0, 1,
+}
+*/

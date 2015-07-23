@@ -29,7 +29,7 @@ type StaticShape struct {
 	vertices []float32 // Vec3
 	textures []float32 // Vec2 (UV)
 	normals  []float32 // Vec3
-	indices  []float32
+	indices  []uint8
 }
 
 func (shape *StaticShape) Draw(shader Shader, camera Camera) {
@@ -71,12 +71,12 @@ func (s *StaticShape) Len() int {
 }
 
 func (shape *StaticShape) BytesOffset(n int) []byte {
-	objects := []ObjectData{NewObjectData(shape.vertices, vertexDim)}
+	objects := []DimSlicer{NewDimSlice(vertexDim, shape.vertices)}
 	if len(shape.textures) > 0 {
-		objects = append(objects, NewObjectData(shape.textures, textureDim))
+		objects = append(objects, NewDimSlice(textureDim, shape.textures))
 	}
 	if len(shape.normals) > 0 {
-		objects = append(objects, NewObjectData(shape.normals, normalDim))
+		objects = append(objects, NewDimSlice(normalDim, shape.normals))
 	}
 
 	length := len(shape.vertices) / vertexDim
@@ -99,7 +99,7 @@ func (shape *StaticShape) Buffer() {
 		gl.BufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
 	}
 
-	data = EncodeObjects(0, len(shape.indices)/vertexDim, NewObjectData(shape.indices, vertexDim))
+	data = EncodeObjects(0, len(shape.indices)/vertexDim, NewDimSlice(vertexDim, shape.indices))
 	if len(data) > 0 {
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.EBI)
 		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW)
