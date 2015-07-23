@@ -51,8 +51,6 @@ type DimSlicer interface {
 // EncodeObjects converts float32 vertices into a LittleEndian byte array.
 // Offset and length are based on the number of rows per dimension.
 func EncodeObjects(offset int, length int, objects ...DimSlicer) []byte {
-	log.Println("EncodeObjects:", offset, length, objects)
-
 	// TODO: Pre-allocate?
 	/*
 		dimSum := 0 // yum!
@@ -76,6 +74,8 @@ func EncodeObjects(offset int, length int, objects ...DimSlicer) []byte {
 
 	//fmt.Printf("Wrote %d vertices: %d to %d \t", shape.Len()-n, n, shape.Len())
 	//fmt.Println(wrote)
+
+	log.Println("EncodeObjects:", offset, length, objects, buf.Len())
 
 	return buf.Bytes()
 }
@@ -200,12 +200,13 @@ func AppendIndexed(slice []float32, idx *[]int, vertices ...float32) []float32 {
 		vert[0] = vertices[i]
 		vert[1] = vertices[i+1]
 		vert[2] = vertices[i+2]
-		_, ok := idxMap[vert]
+		pos, ok := idxMap[vert]
 		if ok {
+			*idx = append(*idx, pos)
 			continue
 		}
+		pos = len(r) / vertexDim
 		r = append(r, vert[:]...)
-		pos := len(r) / vertexDim
 		idxMap[vert] = pos
 		*idx = append(*idx, pos)
 	}

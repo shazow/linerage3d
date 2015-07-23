@@ -32,6 +32,43 @@ type StaticShape struct {
 	indices  []uint8
 }
 
+func (s *StaticShape) Len() int {
+	return len(s.vertices) / vertexDim
+}
+
+func (shape *StaticShape) Stride() int {
+	r := vertexDim
+	if len(shape.textures) > 0 {
+		r += textureDim
+	}
+	if len(shape.normals) > 0 {
+		r += normalDim
+	}
+	return r * vecSize
+}
+
+func (shape *StaticShape) Bytes() []byte {
+	return shape.BytesOffset(0)
+}
+
+func (shape *StaticShape) Close() {
+	gl.DeleteBuffer(shape.VBO)
+	gl.DeleteBuffer(shape.EBI)
+}
+
+func (shape *StaticShape) BytesOffset(n int) []byte {
+	objects := []DimSlicer{NewDimSlice(vertexDim, shape.vertices)}
+	if len(shape.textures) > 0 {
+		objects = append(objects, NewDimSlice(textureDim, shape.textures))
+	}
+	if len(shape.normals) > 0 {
+		objects = append(objects, NewDimSlice(normalDim, shape.normals))
+	}
+
+	length := len(shape.vertices) / vertexDim
+	return EncodeObjects(n, length, objects...)
+}
+
 func (shape *StaticShape) Draw(shader Shader, camera Camera) {
 	gl.BindBuffer(gl.ARRAY_BUFFER, shape.VBO)
 	stride := shape.Stride()
@@ -55,43 +92,6 @@ func (shape *StaticShape) Draw(shader Shader, camera Camera) {
 	// TODO: texture
 }
 
-func (shape *StaticShape) Stride() int {
-	r := vertexDim
-	if len(shape.textures) > 0 {
-		r += textureDim
-	}
-	if len(shape.normals) > 0 {
-		r += normalDim
-	}
-	return r * vecSize
-}
-
-func (s *StaticShape) Len() int {
-	return len(s.vertices) / vertexDim
-}
-
-func (shape *StaticShape) BytesOffset(n int) []byte {
-	objects := []DimSlicer{NewDimSlice(vertexDim, shape.vertices)}
-	if len(shape.textures) > 0 {
-		objects = append(objects, NewDimSlice(textureDim, shape.textures))
-	}
-	if len(shape.normals) > 0 {
-		objects = append(objects, NewDimSlice(normalDim, shape.normals))
-	}
-
-	length := len(shape.vertices) / vertexDim
-	return EncodeObjects(n, length, objects...)
-}
-
-func (shape *StaticShape) Bytes() []byte {
-	return shape.BytesOffset(0)
-}
-
-func (shape *StaticShape) Close() {
-	gl.DeleteBuffer(shape.VBO)
-	gl.DeleteBuffer(shape.EBI)
-}
-
 func (shape *StaticShape) Buffer() {
 	data := shape.Bytes()
 	if len(data) > 0 {
@@ -99,7 +99,7 @@ func (shape *StaticShape) Buffer() {
 		gl.BufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
 	}
 
-	data = EncodeObjects(0, len(shape.indices)/vertexDim, NewDimSlice(vertexDim, shape.indices))
+	data = EncodeObjects(0, len(shape.indices), NewDimSlice(1, shape.indices))
 	if len(data) > 0 {
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.EBI)
 		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW)

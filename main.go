@@ -136,7 +136,7 @@ func (e *Engine) Start() {
 	e.camera.RotateTo(mgl.Vec3{0, 0, 5})
 
 	shape := NewDynamicShape(6 * 4 * 1000)
-	//e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
+	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
 
 	e.line = NewLine(shape)
 

@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -34,12 +33,12 @@ func TestDimSlice(t *testing.T) {
 		t.Error("got %q; want %q", a, b)
 	}
 
-	s = NewDimSlice(2, []uint8{1, 2, 3, 4, 5, 6})
+	s = NewDimSlice(2, []int{1, 2, 3, 4, 5, 6})
 
 	if a, b := s.Dim(), 2; a != b {
 		t.Error("got %q; want %q", a, b)
 	}
-	if a, b := s.Slice(1, 4), []uint8{2, 3, 4}; !reflect.DeepEqual(a, b) {
+	if a, b := s.Slice(1, 4), []int{2, 3, 4}; !reflect.DeepEqual(a, b) {
 		t.Error("got %q; want %q", a, b)
 	}
 }
@@ -104,18 +103,24 @@ func TestEncodeObjects(t *testing.T) {
 func TestAppendIndexed(t *testing.T) {
 	idx := []int{}
 	verts := AppendIndexed([]float32{}, &idx, []float32{1, 1, 1, 2, 2, 2, 1, 1, 1, 2, 2, 2, 1, 1, 1}...)
-	expectIdx := []int{1, 2}
+	expectIdx := []int{0, 1, 0, 1, 0}
 	if !reflect.DeepEqual(idx, expectIdx) {
-		t.Error("got %q; want %q", idx, expectIdx)
+		t.Errorf("got %v; want %v", idx, expectIdx)
 	}
 	expectVerts := []float32{1, 1, 1, 2, 2, 2}
 	if !reflect.DeepEqual(verts, expectVerts) {
-		t.Error("got %q; want %q", verts, expectVerts)
+		t.Errorf("got %v; want %v", verts, expectVerts)
 	}
 
 	idx = []int{}
-	verts = AppendIndexed([]float32{}, &idx, skyboxVertices...)
-	fmt.Println(idx, verts)
+	verts = AppendIndexed([]float32{}, &idx, unindexedCube...)
+	if !reflect.DeepEqual(verts, indexedCube) {
+		t.Errorf("got %v; want %v", verts, indexedCube)
+	}
+
+	if !reflect.DeepEqual(idx, cubeIndex) {
+		t.Errorf("got %v; want %v", idx, cubeIndex)
+	}
 }
 
 var unindexedCube = []float32{
@@ -160,4 +165,24 @@ var unindexedCube = []float32{
 	1.0, -1.0, -1.0,
 	-1.0, -1.0, 1.0,
 	1.0, -1.0, 1.0,
+}
+
+var indexedCube = []float32{
+	-1, 1, -1,
+	-1, -1, -1,
+	1, -1, -1,
+	1, 1, -1,
+	-1, -1, 1,
+	-1, 1, 1,
+	1, -1, 1,
+	1, 1, 1,
+}
+
+var cubeIndex = []int{
+	0, 1, 2, 2, 3, 0,
+	4, 1, 0, 0, 5, 4,
+	2, 6, 7, 7, 3, 2,
+	4, 5, 7, 7, 6, 4,
+	0, 3, 7, 7, 5, 0,
+	1, 4, 2, 2, 4, 6,
 }
