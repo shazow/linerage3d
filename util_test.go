@@ -3,8 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"reflect"
 	"testing"
+
+	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 func DecodeObjects(b []byte) ([]float32, error) {
@@ -33,12 +36,12 @@ func TestDimSlice(t *testing.T) {
 		t.Error("got %q; want %q", a, b)
 	}
 
-	s = NewDimSlice(2, []int{1, 2, 3, 4, 5, 6})
+	s = NewDimSlice(2, []uint8{1, 2, 3, 4, 5, 6})
 
 	if a, b := s.Dim(), 2; a != b {
 		t.Error("got %q; want %q", a, b)
 	}
-	if a, b := s.Slice(1, 4), []int{2, 3, 4}; !reflect.DeepEqual(a, b) {
+	if a, b := s.Slice(1, 4), []uint8{2, 3, 4}; !reflect.DeepEqual(a, b) {
 		t.Error("got %q; want %q", a, b)
 	}
 }
@@ -98,6 +101,17 @@ func TestEncodeObjects(t *testing.T) {
 	if !reflect.DeepEqual(vertices, decoded) {
 		t.Error("Failed to encode:", decoded)
 	}
+}
+
+func TestQuad(t *testing.T) {
+	q := Quad(mgl.Vec3{0, 0, 0}, mgl.Vec3{1, 1, 0})
+	fmt.Println(q)
+
+	q = Quad(mgl.Vec3{-1, -1, 0}, mgl.Vec3{1, 1, 0})
+	fmt.Println(q)
+
+	q = Quad(mgl.Vec3{0, 0, 0}, mgl.Vec3{1, 0, 1})
+	fmt.Println(q)
 }
 
 func TestAppendIndexed(t *testing.T) {

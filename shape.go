@@ -26,10 +26,11 @@ type StaticShape struct {
 	IBO     gl.Buffer
 	Texture gl.Texture
 
-	vertices []float32 // Vec3
-	textures []float32 // Vec2 (UV)
-	normals  []float32 // Vec3
-	indices  []uint8
+	surfaceColor []float32
+	vertices     []float32 // Vec3
+	textures     []float32 // Vec2 (UV)
+	normals      []float32 // Vec3
+	indices      []uint8
 }
 
 func (s *StaticShape) Len() int {
@@ -72,6 +73,10 @@ func (shape *StaticShape) BytesOffset(n int) []byte {
 func (shape *StaticShape) Draw(shader Shader, camera Camera) {
 	gl.BindBuffer(gl.ARRAY_BUFFER, shape.VBO)
 	stride := shape.Stride()
+
+	if len(shape.surfaceColor) > 0 {
+		gl.Uniform4fv(shader.Uniform("surfaceColor"), shape.surfaceColor)
+	}
 
 	gl.EnableVertexAttribArray(shader.Attrib("vertCoord"))
 	gl.VertexAttribPointer(shader.Attrib("vertCoord"), vertexDim, gl.FLOAT, false, stride, 0)

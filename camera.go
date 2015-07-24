@@ -21,6 +21,16 @@ type Camera interface {
 	Position() mgl.Vec3
 }
 
+type FixedCamera struct {
+	view       mgl.Mat4
+	projection mgl.Mat4
+	position   mgl.Vec3
+}
+
+func (c FixedCamera) Projection() mgl.Mat4 { return c.projection }
+func (c FixedCamera) View() mgl.Mat4       { return c.view }
+func (c FixedCamera) Position() mgl.Vec3   { return c.position }
+
 type EulerCamera struct {
 	projection mgl.Mat4
 	eye        mgl.Vec3

@@ -22,9 +22,9 @@ type dimslice_float32 struct {
 	slice []float32
 }
 
-func (o *dimslice_float32) Slice(i, j int) interface{} { return o.slice[i:j] }
-func (o *dimslice_float32) Dim() int                   { return o.dim }
-func (o *dimslice_float32) String() string {
+func (o dimslice_float32) Slice(i, j int) interface{} { return o.slice[i:j] }
+func (o dimslice_float32) Dim() int                   { return o.dim }
+func (o dimslice_float32) String() string {
 	return fmt.Sprintf("<float32 slice: len=%d dim=%d>", len(o.slice), o.dim)
 }
 
@@ -33,9 +33,9 @@ type dimslice_uint8 struct {
 	slice []uint8
 }
 
-func (o *dimslice_uint8) Slice(i, j int) interface{} { return o.slice[i:j] }
-func (o *dimslice_uint8) Dim() int                   { return o.dim }
-func (o *dimslice_uint8) String() string {
+func (o dimslice_uint8) Slice(i, j int) interface{} { return o.slice[i:j] }
+func (o dimslice_uint8) Dim() int                   { return o.dim }
+func (o dimslice_uint8) String() string {
 	return fmt.Sprintf("<uint8 slice: len=%d dim=%d>", len(o.slice), o.dim)
 }
 
@@ -46,6 +46,7 @@ func NewDimSlice(dim int, slice interface{}) DimSlicer {
 	case []uint8:
 		return &dimslice_uint8{dim, slice}
 	}
+	panic(fmt.Sprintf("invalid slice type: %T", slice))
 	return nil
 }
 
@@ -223,12 +224,12 @@ func AppendIndexed(slice []float32, idx *[]int, vertices ...float32) []float32 {
 func Quad(a mgl.Vec3, b mgl.Vec3) []float32 {
 	return []float32{
 		// First triangle
-		b.X(), b.Y(), b.Z(), // Top Right
-		a.X(), b.Y(), a.Z(), // Top Left
-		a.X(), a.Y(), a.Z(), // Bottom Left
+		b[0], b[1], b[2], // Top Right
+		a[0], b[1], a[2], // Top Left
+		a[0], a[1], a[2], // Bottom Left
 		// Second triangle
-		b.X(), a.Y(), b.Z(), // Bottom Right
-		b.X(), b.Y(), b.Z(), // Top Right
-		a.X(), a.Y(), a.Z(), // Bottom Left
+		a[0], a[1], a[2], // Bottom Left
+		b[0], b[1], b[2], // Top Right
+		b[0], a[1], b[2], // Bottom Right
 	}
 }

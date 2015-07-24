@@ -84,8 +84,6 @@ func (line *Line) Add(angle float32) {
 	pn := p1.Sub(p2).Cross(p3.Sub(p2)).Normalize()
 	normal := pn[:]
 
-	fmt.Println("quad", quad, "normal", normal)
-
 	line.position = p3
 
 	if !turning && len(line.vertices) >= len(quad) {
@@ -129,19 +127,15 @@ func (e *Engine) Start() {
 	}
 
 	// Setup skybox
-	skyboxShape := NewStaticShape()
-	skyboxShape.vertices = skyboxVertices
-	skyboxShape.indices = skyboxIndices
-	skyboxShape.Buffer()
-	skyboxShape.Texture, err = LoadTextureCube("square.png")
+	skyboxTex, err := LoadTextureCube("square.png")
 	if err != nil {
 		fail(1, "Failed to load texture:", err)
 	}
-	e.scene.skybox = &Skybox{StaticShape: skyboxShape}
-	e.scene.skybox.shader, err = NewShader("skybox.v.glsl", "skybox.f.glsl")
+	skyboxShader, err := NewShader("skybox.v.glsl", "skybox.f.glsl")
 	if err != nil {
 		fail(1, "Failed to load shaders:", err)
 	}
+	e.scene.skybox = NewSkybox(skyboxShader, skyboxTex)
 
 	e.camera.MoveTo(mgl.Vec3{0, 10, -3})
 	e.camera.RotateTo(mgl.Vec3{0, 0, 5})
@@ -161,6 +155,7 @@ func (e *Engine) Start() {
 		cube.Buffer()
 		e.scene.nodes = append(e.scene.nodes, Node{Shape: cube})
 	*/
+	e.scene.nodes = append(e.scene.nodes, Node{Shape: NewFloor()})
 
 	e.started = time.Now()
 
@@ -206,8 +201,8 @@ func (e *Engine) Draw(c config.Event) {
 	//gl.SampleCoverage(4.0, false)
 
 	// Spinny!
-	rotation := mgl.HomogRotate3D(float32(since.Seconds()), AxisFront)
-	e.scene.transform = &rotation
+	//rotation := mgl.HomogRotate3D(float32(since.Seconds()), AxisFront)
+	//e.scene.transform = &rotation
 
 	e.line.Tick(since, 0.009)
 	e.scene.Draw(e.camera)
