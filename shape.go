@@ -17,13 +17,13 @@ type Shape interface {
 func NewStaticShape() *StaticShape {
 	shape := &StaticShape{}
 	shape.VBO = gl.CreateBuffer()
-	shape.EBI = gl.CreateBuffer()
+	shape.IBO = gl.CreateBuffer()
 	return shape
 }
 
 type StaticShape struct {
 	VBO     gl.Buffer
-	EBI     gl.Buffer
+	IBO     gl.Buffer
 	Texture gl.Texture
 
 	vertices []float32 // Vec3
@@ -53,7 +53,7 @@ func (shape *StaticShape) Bytes() []byte {
 
 func (shape *StaticShape) Close() {
 	gl.DeleteBuffer(shape.VBO)
-	gl.DeleteBuffer(shape.EBI)
+	gl.DeleteBuffer(shape.IBO)
 }
 
 func (shape *StaticShape) BytesOffset(n int) []byte {
@@ -82,7 +82,7 @@ func (shape *StaticShape) Draw(shader Shader, camera Camera) {
 	}
 	// TODO: texture
 
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.EBI)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.IBO)
 	gl.DrawArrays(gl.TRIANGLES, 0, shape.Len())
 
 	gl.DisableVertexAttribArray(shader.Attrib("vertCoord"))
@@ -101,7 +101,7 @@ func (shape *StaticShape) Buffer() {
 
 	data = EncodeObjects(0, len(shape.indices), NewDimSlice(1, shape.indices))
 	if len(data) > 0 {
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.EBI)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.IBO)
 		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW)
 	}
 }
