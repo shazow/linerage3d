@@ -74,13 +74,14 @@ func (scene *Scene) Draw(camera Camera) {
 	shader.Use()
 
 	// Setup MVP
-	projection, view := camera.Projection(), camera.View()
+	projection, view, position := camera.Projection(), camera.View(), camera.Position()
 	gl.UniformMatrix4fv(shader.Uniform("projection"), projection[:])
 	gl.UniformMatrix4fv(shader.Uniform("view"), view[:])
+	gl.UniformMatrix4fv(shader.Uniform("cameraPos"), position[:])
 
 	// Light
-	gl.Uniform3fv(shader.Uniform("lightIntensities"), []float32{1, 1, 1})
-	gl.Uniform3fv(shader.Uniform("lightPosition"), []float32{1, 1, 1})
+	gl.Uniform3fv(shader.Uniform("lightIntensities"), []float32{0.6, 0.6, 0.6})
+	gl.Uniform3fv(shader.Uniform("lightPosition"), position[:])
 
 	for _, node := range scene.nodes {
 		model := transformModel(node.transform, scene.transform)

@@ -24,6 +24,9 @@ type dimslice_float32 struct {
 
 func (o *dimslice_float32) Slice(i, j int) interface{} { return o.slice[i:j] }
 func (o *dimslice_float32) Dim() int                   { return o.dim }
+func (o *dimslice_float32) String() string {
+	return fmt.Sprintf("<float32 slice: len=%d dim=%d>", len(o.slice), o.dim)
+}
 
 type dimslice_uint8 struct {
 	dim   int
@@ -32,6 +35,9 @@ type dimslice_uint8 struct {
 
 func (o *dimslice_uint8) Slice(i, j int) interface{} { return o.slice[i:j] }
 func (o *dimslice_uint8) Dim() int                   { return o.dim }
+func (o *dimslice_uint8) String() string {
+	return fmt.Sprintf("<uint8 slice: len=%d dim=%d>", len(o.slice), o.dim)
+}
 
 func NewDimSlice(dim int, slice interface{}) DimSlicer {
 	switch slice := slice.(type) {
@@ -46,11 +52,13 @@ func NewDimSlice(dim int, slice interface{}) DimSlicer {
 type DimSlicer interface {
 	Slice(int, int) interface{}
 	Dim() int
+	String() string
 }
 
 // EncodeObjects converts float32 vertices into a LittleEndian byte array.
 // Offset and length are based on the number of rows per dimension.
 func EncodeObjects(offset int, length int, objects ...DimSlicer) []byte {
+	log.Println("EncodeObjects:", offset, length, objects)
 	// TODO: Pre-allocate?
 	/*
 		dimSum := 0 // yum!
@@ -74,8 +82,6 @@ func EncodeObjects(offset int, length int, objects ...DimSlicer) []byte {
 
 	//fmt.Printf("Wrote %d vertices: %d to %d \t", shape.Len()-n, n, shape.Len())
 	//fmt.Println(wrote)
-
-	log.Println("EncodeObjects:", offset, length, objects, buf.Len())
 
 	return buf.Bytes()
 }

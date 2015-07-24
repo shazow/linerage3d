@@ -11,6 +11,7 @@ attribute vec3 vertNormal;
 varying vec3 fragCoord;
 varying vec3 fragNormal;
 
+
 void main(){
     vec4 vertPos4 = view * model * vec4(vertCoord, 1.0);
 

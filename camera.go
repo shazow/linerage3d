@@ -18,6 +18,7 @@ var (
 type Camera interface {
 	View() mgl.Mat4
 	Projection() mgl.Mat4
+	Position() mgl.Vec3
 }
 
 type EulerCamera struct {
@@ -30,6 +31,10 @@ type EulerCamera struct {
 	center mgl.Vec3
 	up     mgl.Vec3
 	right  mgl.Vec3
+}
+
+func (c *EulerCamera) Position() mgl.Vec3 {
+	return c.eye
 }
 
 // Perspective computes the projection matrix and saves it
@@ -109,6 +114,10 @@ type QuatCamera struct {
 	projection mgl.Mat4
 	position   mgl.Vec3
 	rotation   mgl.Quat
+}
+
+func (c *QuatCamera) Position() mgl.Vec3 {
+	return c.position
 }
 
 // Perspective computes the projection matrix and saves it

@@ -77,13 +77,17 @@ func (shape *StaticShape) Draw(shader Shader, camera Camera) {
 	gl.VertexAttribPointer(shader.Attrib("vertCoord"), vertexDim, gl.FLOAT, false, stride, 0)
 
 	if len(shape.normals) > 0 {
-		gl.EnableVertexAttribArray(shader.Attrib("normal"))
+		gl.EnableVertexAttribArray(shader.Attrib("vertNormal"))
 		gl.VertexAttribPointer(shader.Attrib("vertNormal"), normalDim, gl.FLOAT, false, stride, vertexDim*vecSize)
 	}
 	// TODO: texture
 
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.IBO)
-	gl.DrawArrays(gl.TRIANGLES, 0, shape.Len())
+	if len(shape.indices) > 0 {
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.IBO)
+		gl.DrawElements(gl.TRIANGLES, len(shape.indices), gl.UNSIGNED_BYTE, 0)
+	} else {
+		gl.DrawArrays(gl.TRIANGLES, 0, shape.Len())
+	}
 
 	gl.DisableVertexAttribArray(shader.Attrib("vertCoord"))
 	if len(shape.normals) > 0 {
@@ -99,8 +103,8 @@ func (shape *StaticShape) Buffer() {
 		gl.BufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
 	}
 
-	data = EncodeObjects(0, len(shape.indices), NewDimSlice(1, shape.indices))
-	if len(data) > 0 {
+	if len(shape.indices) > 0 {
+		data = EncodeObjects(0, len(shape.indices), NewDimSlice(1, shape.indices))
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.IBO)
 		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW)
 	}

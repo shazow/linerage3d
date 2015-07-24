@@ -78,19 +78,30 @@ func (line *Line) Add(angle float32) {
 
 	p1 := line.lastTurn
 	p2 := line.position.Add(unit)
+	p3 := mgl.Vec3{p2[0], 0, p2[2]} // Discard height
 	quad := Quad(p1, p2)
 
-	// Discard height and save
-	p2[1] = 0
-	line.position = p2
+	pn := p2.Sub(p1).Cross(p3.Sub(p1)).Normalize()
+	normal := pn[:]
+
+	fmt.Println("quad", quad, "normal", normal)
+
+	line.position = p3
 
 	if !turning && len(line.vertices) >= len(quad) {
+		// Replace
 		line.vertices = append(line.vertices[len(line.vertices)-len(quad):], quad...)
 	} else {
 		line.offset = len(line.vertices) / vertexDim
 		line.vertices = append(line.vertices, quad...)
 	}
-	//e.shape.normals = append(e.shape.normals, []float32{1.0, 0.0, 0.0}...)
+	// TODO: Optimize by using indices
+	line.normals = append(line.normals, normal...)
+	line.normals = append(line.normals, normal...)
+	line.normals = append(line.normals, normal...)
+	line.normals = append(line.normals, normal...)
+	line.normals = append(line.normals, normal...)
+	line.normals = append(line.normals, normal...)
 
 	line.turning = false
 }
@@ -136,13 +147,18 @@ func (e *Engine) Start() {
 	e.camera.RotateTo(mgl.Vec3{0, 0, 5})
 
 	shape := NewDynamicShape(6 * 4 * 1000)
-	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
-
 	e.line = NewLine(shape)
-
 	e.line.Add(0)
 	e.line.Add(0)
 	e.line.Buffer(0)
+	//e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
+
+	cube := NewStaticShape()
+	cube.vertices = skyboxVertices
+	cube.normals = skyboxNormals
+	cube.indices = skyboxIndices
+	cube.Buffer()
+	e.scene.nodes = append(e.scene.nodes, Node{Shape: cube})
 
 	e.started = time.Now()
 
@@ -190,8 +206,9 @@ func (e *Engine) Draw(c config.Event) {
 	// Spinny!
 	rotation := mgl.HomogRotate3D(float32(since.Seconds()), AxisFront)
 	e.scene.transform = &rotation
+	_ = since
 
-	e.line.Tick(since, 0.009)
+	//e.line.Tick(since, 0.009)
 
 	e.scene.Draw(e.camera)
 
