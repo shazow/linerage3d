@@ -81,7 +81,7 @@ func (line *Line) Add(angle float32) {
 	p3 := mgl.Vec3{p2[0], 0, p2[2]} // Discard height
 	quad := Quad(p1, p2)
 
-	pn := p2.Sub(p1).Cross(p3.Sub(p1)).Normalize()
+	pn := p1.Sub(p2).Cross(p3.Sub(p2)).Normalize()
 	normal := pn[:]
 
 	fmt.Println("quad", quad, "normal", normal)
@@ -151,14 +151,16 @@ func (e *Engine) Start() {
 	e.line.Add(0)
 	e.line.Add(0)
 	e.line.Buffer(0)
-	//e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
+	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
 
-	cube := NewStaticShape()
-	cube.vertices = skyboxVertices
-	cube.normals = skyboxNormals
-	cube.indices = skyboxIndices
-	cube.Buffer()
-	e.scene.nodes = append(e.scene.nodes, Node{Shape: cube})
+	/*
+		cube := NewStaticShape()
+		cube.vertices = skyboxVertices
+		cube.normals = skyboxNormals
+		cube.indices = skyboxIndices
+		cube.Buffer()
+		e.scene.nodes = append(e.scene.nodes, Node{Shape: cube})
+	*/
 
 	e.started = time.Now()
 
@@ -206,10 +208,8 @@ func (e *Engine) Draw(c config.Event) {
 	// Spinny!
 	rotation := mgl.HomogRotate3D(float32(since.Seconds()), AxisFront)
 	e.scene.transform = &rotation
-	_ = since
 
-	//e.line.Tick(since, 0.009)
-
+	e.line.Tick(since, 0.009)
 	e.scene.Draw(e.camera)
 
 }
