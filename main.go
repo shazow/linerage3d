@@ -22,17 +22,19 @@ const turnSpeed = 0.05
 const moveSpeed = 0.1
 
 type Engine struct {
-	camera *QuatCamera
-	scene  *Scene
+	camera   *QuatCamera
+	scene    *Scene
+	bindings *Bindings
 
 	started time.Time
-	pressed map[rune]bool
 
 	line *Line
 
 	touchLoc   geom.Point
 	dragOrigin geom.Point
 	dragging   bool
+	paused     bool
+	following  bool
 }
 
 func (e *Engine) Start() {
@@ -75,6 +77,14 @@ func (e *Engine) Start() {
 	*/
 	//e.scene.nodes = append(e.scene.nodes, Node{Shape: NewFloor()})
 
+	// Toggle keys
+	e.bindings.On(KeyPause, func(_ KeyBinding) {
+		e.paused = !e.paused
+	})
+	e.bindings.On(KeyCameraFollow, func(_ KeyBinding) {
+		e.following = !e.following
+	})
+
 	e.started = time.Now()
 
 	log.Println("Starting: ", e.scene.String())
@@ -109,9 +119,9 @@ func (e *Engine) Touch(t touch.Event, c config.Event) {
 func (e *Engine) Press(t key.Event, c config.Event) {
 	switch t.Direction {
 	case key.DirPress:
-		e.pressed[t.Rune] = true
+		e.bindings.Press(t.Code)
 	case key.DirRelease:
-		e.pressed[t.Rune] = false
+		e.bindings.Release(t.Code)
 	}
 }
 
@@ -119,20 +129,30 @@ func (e *Engine) Draw(c config.Event) {
 	since := time.Now().Sub(e.started)
 
 	// Handle key presses
-	delta := mgl.Vec3{}
-	if e.pressed['w'] {
-		delta[2] -= moveSpeed
+	var lineRotate float32
+	var camDelta mgl.Vec3
+	if e.bindings.Pressed(KeyLineLeft) {
+		lineRotate += turnSpeed
 	}
-	if e.pressed['s'] {
-		delta[2] += moveSpeed
+	if e.bindings.Pressed(KeyLineRight) {
+		lineRotate -= turnSpeed
 	}
-	if e.pressed['a'] {
-		delta[0] -= moveSpeed
+	if e.bindings.Pressed(KeyForward) {
+		camDelta[2] -= moveSpeed
 	}
-	if e.pressed['d'] {
-		delta[0] += moveSpeed
+	if e.bindings.Pressed(KeyReverse) {
+		camDelta[2] += moveSpeed
 	}
-	e.camera.Move(delta)
+	if e.bindings.Pressed(KeyStrafeLeft) {
+		camDelta[0] -= moveSpeed
+	}
+	if e.bindings.Pressed(KeyStrafeRight) {
+		camDelta[0] += moveSpeed
+	}
+	if e.bindings.Pressed(KeyStrafeRight) {
+		camDelta[0] += moveSpeed
+	}
+	e.camera.Move(camDelta)
 
 	gl.ClearColor(0, 0, 0, 1)
 	//gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -147,7 +167,9 @@ func (e *Engine) Draw(c config.Event) {
 	//rotation := mgl.HomogRotate3D(float32(since.Seconds()), AxisFront)
 	//e.scene.transform = &rotation
 
-	e.line.Tick(since, 0.009)
+	if !e.paused {
+		e.line.Tick(since, lineRotate)
+	}
 	e.scene.Draw(e.camera)
 
 }
@@ -162,8 +184,8 @@ func main() {
 
 	camera := NewQuatCamera()
 	engine := Engine{
-		pressed: map[rune]bool{},
-		camera:  camera,
+		camera:   camera,
+		bindings: DefaultBindings(),
 		scene: &Scene{
 			ambientColor: mgl.Vec3{0.5, 0.5, 0.5},
 		},
