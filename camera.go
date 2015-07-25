@@ -168,6 +168,17 @@ func (c *QuatCamera) MoveTo(position mgl.Vec3) {
 	c.position = position
 }
 
+// Lerp will interpolate between the desired position/center by amount.
+func (c *QuatCamera) Lerp(position mgl.Vec3, center mgl.Vec3, amount float32) {
+	direction := center.Sub(position).Normalize()
+	right := direction.Cross(AxisUp)
+	up := right.Cross(direction)
+
+	targetRot := mgl.QuatLookAtV(position, center, up)
+	c.rotation = mgl.QuatNlerp(c.rotation, targetRot, amount)
+	c.position = c.position.Add(position.Sub(c.position).Mul(amount))
+}
+
 // View returns the transform matrix from world space into camera space
 func (c *QuatCamera) View() mgl.Mat4 {
 	// FIXME: Is there a way to get this matrix from the quat+position directly?

@@ -6,3 +6,7 @@ Status: Spinny line. No gameplay, just messing around with 3D stuff.
 
 There's a bunch of junk all over the place, eventually I'd like to clean this up
 into a coherent library and game code.
+
+## Notes
+
+- https://github.com/luxengine/glm

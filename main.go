@@ -35,6 +35,8 @@ type Engine struct {
 	dragging   bool
 	paused     bool
 	following  bool
+
+	followOffset mgl.Vec3
 }
 
 func (e *Engine) Start() {
@@ -57,7 +59,8 @@ func (e *Engine) Start() {
 	}
 	e.scene.skybox = NewSkybox(skyboxShader, skyboxTex)
 
-	e.camera.MoveTo(mgl.Vec3{0, 10, -3})
+	e.followOffset = mgl.Vec3{0, 10, -3}
+	e.camera.MoveTo(e.followOffset)
 	e.camera.RotateTo(mgl.Vec3{0, 0, 5})
 
 	shape := NewDynamicShape(6 * 4 * 1000)
@@ -80,9 +83,11 @@ func (e *Engine) Start() {
 	// Toggle keys
 	e.bindings.On(KeyPause, func(_ KeyBinding) {
 		e.paused = !e.paused
+		log.Println("Paused:", e.paused)
 	})
 	e.bindings.On(KeyCameraFollow, func(_ KeyBinding) {
 		e.following = !e.following
+		log.Println("Following:", e.following)
 	})
 
 	e.started = time.Now()
@@ -155,7 +160,12 @@ func (e *Engine) Draw(c config.Event) {
 	if e.bindings.Pressed(KeyCamDown) {
 		e.camera.MoveTo(e.camera.Position().Add(mgl.Vec3{0, -moveSpeed, 0}))
 	}
-	e.camera.Move(camDelta)
+	if camDelta[0]+camDelta[1]+camDelta[2] != 0 {
+		e.following = false
+		e.camera.Move(camDelta)
+	} else if e.following {
+		e.camera.Lerp(e.line.position.Add(e.followOffset), e.line.position, 0.1)
+	}
 
 	gl.ClearColor(0, 0, 0, 1)
 	//gl.Clear(gl.COLOR_BUFFER_BIT)
