@@ -59,7 +59,7 @@ type DimSlicer interface {
 // EncodeObjects converts float32 vertices into a LittleEndian byte array.
 // Offset and length are based on the number of rows per dimension.
 func EncodeObjects(offset int, length int, objects ...DimSlicer) []byte {
-	log.Println("EncodeObjects:", offset, length, objects)
+	//log.Println("EncodeObjects:", offset, length, objects)
 	// TODO: Pre-allocate?
 	/*
 		dimSum := 0 // yum!
