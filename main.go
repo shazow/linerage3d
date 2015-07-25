@@ -137,20 +137,23 @@ func (e *Engine) Draw(c config.Event) {
 	if e.bindings.Pressed(KeyLineRight) {
 		lineRotate -= turnSpeed
 	}
-	if e.bindings.Pressed(KeyForward) {
+	if e.bindings.Pressed(KeyCamForward) {
 		camDelta[2] -= moveSpeed
 	}
-	if e.bindings.Pressed(KeyReverse) {
+	if e.bindings.Pressed(KeyCamReverse) {
 		camDelta[2] += moveSpeed
 	}
-	if e.bindings.Pressed(KeyStrafeLeft) {
+	if e.bindings.Pressed(KeyCamLeft) {
 		camDelta[0] -= moveSpeed
 	}
-	if e.bindings.Pressed(KeyStrafeRight) {
+	if e.bindings.Pressed(KeyCamRight) {
 		camDelta[0] += moveSpeed
 	}
-	if e.bindings.Pressed(KeyStrafeRight) {
-		camDelta[0] += moveSpeed
+	if e.bindings.Pressed(KeyCamUp) {
+		e.camera.MoveTo(e.camera.Position().Add(mgl.Vec3{0, moveSpeed, 0}))
+	}
+	if e.bindings.Pressed(KeyCamDown) {
+		e.camera.MoveTo(e.camera.Position().Add(mgl.Vec3{0, -moveSpeed, 0}))
 	}
 	e.camera.Move(camDelta)
 

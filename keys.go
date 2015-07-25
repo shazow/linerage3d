@@ -6,10 +6,12 @@ type KeyBinding uint8
 
 const (
 	KeyUnknown KeyBinding = iota
-	KeyForward
-	KeyReverse
-	KeyStrafeLeft
-	KeyStrafeRight
+	KeyCamForward
+	KeyCamReverse
+	KeyCamLeft
+	KeyCamRight
+	KeyCamUp
+	KeyCamDown
 	KeyLineLeft
 	KeyLineRight
 	KeyCameraFollow
@@ -18,10 +20,12 @@ const (
 
 func DefaultBindings() *Bindings {
 	binding := map[key.Code]KeyBinding{
-		key.CodeW:          KeyForward,
-		key.CodeS:          KeyReverse,
-		key.CodeA:          KeyStrafeLeft,
-		key.CodeD:          KeyStrafeRight,
+		key.CodeW:          KeyCamForward,
+		key.CodeS:          KeyCamReverse,
+		key.CodeA:          KeyCamLeft,
+		key.CodeD:          KeyCamRight,
+		key.CodeQ:          KeyCamUp,
+		key.CodeE:          KeyCamDown,
 		key.CodeRightArrow: KeyLineRight,
 		key.CodeLeftArrow:  KeyLineLeft,
 		key.CodeF:          KeyCameraFollow,
