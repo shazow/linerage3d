@@ -76,7 +76,7 @@ func (line *Line) Add(angle float32) {
 
 	if !turning && len(line.vertices) >= len(quad) {
 		// Replace
-		line.vertices = append(line.vertices[len(line.vertices)-len(quad):], quad...)
+		line.vertices = append(line.vertices[:len(line.vertices)-len(quad)], quad...)
 	} else {
 		line.offset = len(line.vertices) / vertexDim
 		line.vertices = append(line.vertices, quad...)

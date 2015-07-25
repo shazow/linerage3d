@@ -111,7 +111,7 @@ func (e *Engine) Touch(t touch.Event, c config.Event) {
 		e.dragging = true
 	} else if t.Type == touch.TypeEnd {
 		e.dragging = false
-		log.Println(e.camera.String())
+		log.Println("vertices=", e.line.Len(), e.camera.String())
 	}
 	e.touchLoc = t.Loc
 	if e.dragging {
