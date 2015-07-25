@@ -155,7 +155,7 @@ func (e *Engine) Start() {
 		cube.Buffer()
 		e.scene.nodes = append(e.scene.nodes, Node{Shape: cube})
 	*/
-	e.scene.nodes = append(e.scene.nodes, Node{Shape: NewFloor()})
+	//e.scene.nodes = append(e.scene.nodes, Node{Shape: NewFloor()})
 
 	e.started = time.Now()
 
