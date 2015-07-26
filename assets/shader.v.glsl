@@ -1,4 +1,5 @@
 #version 100
+precision mediump float;
 
 uniform mat4 projection;
 uniform mat4 view;
@@ -18,5 +19,5 @@ void main(){
     gl_Position = projection * vertPos4;
 
     fragCoord = vec3(vertPos4) / vertPos4.w;
-    fragNormal = vec3(normalMatrix * vec4(vertNormal, 0.0));
+    fragNormal = normalize(vec3(model * vec4(vertNormal, 0.0)));
 }

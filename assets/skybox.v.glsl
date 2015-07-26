@@ -8,6 +8,7 @@ attribute vec3 vertCoord;
 varying vec3 fragCoord;
 
 void main(){
-    gl_Position = projection * view * vec4(vertCoord, 1.0);
+    vec4 pos = projection * view * vec4(vertCoord, 1.0);
+    gl_Position = pos.xyww;
     fragCoord = vertCoord;
 }

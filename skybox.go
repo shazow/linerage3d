@@ -1,6 +1,9 @@
 package main
 
-import "golang.org/x/mobile/gl"
+import (
+	mgl "github.com/go-gl/mathgl/mgl32"
+	"golang.org/x/mobile/gl"
+)
 
 // TODO: Load this from an .obj file in the asset repository?
 
@@ -59,6 +62,7 @@ func (shape *Skybox) Draw(_ Shader, camera Camera) {
 	shader := shape.shader
 	shader.Use()
 
+	gl.DepthFunc(gl.LEQUAL)
 	gl.DepthMask(false)
 
 	projection, view := camera.Projection(), camera.View().Mat3().Mat4()
@@ -76,22 +80,74 @@ func (shape *Skybox) Draw(_ Shader, camera Camera) {
 	gl.DisableVertexAttribArray(shader.Attrib("vertCoord"))
 
 	gl.DepthMask(true)
+	gl.DepthFunc(gl.LESS)
 }
 
 var floorVertices = []float32{
-	-100, -1, -100,
-	100, -1, -100,
-	100, -1, 100,
-	100, -1, 100,
-	-100, -1, -100,
-	-100, -1, 100,
+	-100, 0, -100,
+	100, 0, -100,
+	100, 0, 100,
+	100, 0, 100,
+	-100, 0, -100,
+	-100, 0, 100,
 }
 
-func NewFloor() Shape {
+var floorNormals = []float32{
+	0, 1, 0,
+	0, 1, 0,
+	0, 1, 0,
+	0, 1, 0,
+	0, 1, 0,
+	0, 1, 0,
+}
+
+type Floor struct {
+	Shape
+	reflected []Node
+	transform *mgl.Mat4
+}
+
+func (scene *Floor) Draw(shader Shader, camera Camera) {
+	gl.Enable(gl.STENCIL_TEST)
+	gl.StencilFunc(gl.ALWAYS, 1, 0xFF)
+	gl.StencilOp(gl.KEEP, gl.KEEP, gl.REPLACE)
+	gl.StencilMask(0xFF)
+	gl.DepthMask(false)
+	gl.Clear(gl.STENCIL_BUFFER_BIT)
+
+	// Draw floor
+	gl.Uniform4fv(shader.Uniform("surfaceColor"), []float32{0, 0, 0, 0.3})
+	scene.Shape.Draw(shader, camera)
+
+	// Draw reflections
+	gl.StencilFunc(gl.EQUAL, 1, 0xFF)
+	gl.StencilMask(0x00)
+	gl.DepthMask(true)
+
+	view := camera.View()
+	gl.Uniform4fv(shader.Uniform("surfaceColor"), []float32{0.2, 0.2, 0.2, 1})
+	for _, node := range scene.reflected {
+		model := transformModel(node.transform, scene.transform)
+		gl.UniformMatrix4fv(shader.Uniform("model"), model[:])
+
+		normal := model.Mul4(view).Inv().Transpose()
+		gl.UniformMatrix4fv(shader.Uniform("normalMatrix"), normal[:])
+
+		node.Draw(shader, camera)
+	}
+
+	gl.Disable(gl.STENCIL_TEST)
+	gl.Uniform4fv(shader.Uniform("surfaceColor"), []float32{0, 0, 0, 0})
+}
+
+func NewFloor(reflected ...Node) Shape {
 	floor := NewStaticShape()
 	floor.vertices = floorVertices
-	floor.normals = []float32{0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0}
-	floor.surfaceColor = []float32{0, 0, 0, 1}
+	floor.normals = floorNormals
 	floor.Buffer()
-	return floor
+	flipped := mgl.Scale3D(1, -1, 1)
+	return &Floor{
+		Shape: floor, reflected: reflected,
+		transform: &flipped,
+	}
 }

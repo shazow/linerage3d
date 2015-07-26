@@ -71,6 +71,7 @@ func (e *Engine) Start() {
 	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
 
 	/*
+		// Cube for funsies:
 		cube := NewStaticShape()
 		cube.vertices = skyboxVertices
 		cube.normals = skyboxNormals
@@ -78,7 +79,13 @@ func (e *Engine) Start() {
 		cube.Buffer()
 		e.scene.nodes = append(e.scene.nodes, Node{Shape: cube})
 	*/
-	//e.scene.nodes = append(e.scene.nodes, Node{Shape: NewFloor()})
+
+	/*
+		// Reflective floor
+		e.scene.nodes = append(e.scene.nodes, Node{
+			Shape: NewFloor(Node{Shape: shape}),
+		})
+	*/
 
 	// Toggle keys
 	e.bindings.On(KeyPause, func(_ KeyBinding) {
@@ -137,10 +144,10 @@ func (e *Engine) Draw(c config.Event) {
 	var lineRotate float32
 	var camDelta mgl.Vec3
 	if e.bindings.Pressed(KeyLineLeft) {
-		lineRotate += turnSpeed
+		lineRotate -= turnSpeed
 	}
 	if e.bindings.Pressed(KeyLineRight) {
-		lineRotate -= turnSpeed
+		lineRotate += turnSpeed
 	}
 	if e.bindings.Pressed(KeyCamForward) {
 		camDelta[2] -= moveSpeed
