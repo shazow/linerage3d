@@ -2,6 +2,10 @@ package main
 
 import "golang.org/x/mobile/gl"
 
+// TODO: Need a ShaderRegistry of somekind, ideally with support for default
+// scene values vs per-shape values and attribute checking.
+// TODO: Should each NewShader be a struct embedding a Program?
+
 type Shader interface {
 	Use()
 	Close()

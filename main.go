@@ -28,7 +28,8 @@ type Engine struct {
 
 	started time.Time
 
-	line *Line
+	line    *Line
+	emitter Emitter
 
 	touchLoc   geom.Point
 	dragOrigin geom.Point
@@ -44,6 +45,11 @@ func (e *Engine) Start() {
 
 	// Setup scene shader
 	e.scene.shader, err = NewShader("shader.v.glsl", "shader.f.glsl")
+	if err != nil {
+		fail(1, "Failed to load shaders:", err)
+	}
+
+	particleShader, err := NewShader("particle.v.glsl", "particle.f.glsl")
 	if err != nil {
 		fail(1, "Failed to load shaders:", err)
 	}
@@ -69,6 +75,9 @@ func (e *Engine) Start() {
 	e.line.Add(0)
 	e.line.Buffer(0)
 	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
+
+	e.emitter = ParticleEmitter(mgl.Vec3{0, 1, 1}, 100, 0.01)
+	e.scene.nodes = append(e.scene.nodes, Node{Shape: e.emitter, shader: particleShader})
 
 	/*
 		// Cube for funsies:
@@ -188,7 +197,9 @@ func (e *Engine) Draw(c config.Event) {
 	//e.scene.transform = &rotation
 
 	if !e.paused {
+		e.emitter.Tick(since)
 		e.line.Tick(since, lineRotate)
+		e.emitter.MoveTo(e.line.position)
 	}
 	e.scene.Draw(e.camera)
 

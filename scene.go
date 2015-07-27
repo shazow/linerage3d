@@ -16,6 +16,7 @@ type Light struct {
 type Node struct {
 	Shape
 	transform *mgl.Mat4
+	shader    Shader
 }
 
 func (node *Node) String() string {
@@ -43,24 +44,31 @@ func (scene *Scene) Draw(camera Camera) {
 	}
 
 	shader := scene.shader
-	shader.Use()
 
 	// Setup MVP
 	projection, view, position := camera.Projection(), camera.View(), camera.Position()
-	gl.UniformMatrix4fv(shader.Uniform("projection"), projection[:])
-	gl.UniformMatrix4fv(shader.Uniform("view"), view[:])
-	gl.UniformMatrix4fv(shader.Uniform("cameraPos"), position[:])
-
-	// Light
-	gl.Uniform3fv(shader.Uniform("lightIntensities"), []float32{0.6, 0.6, 0.6})
-	gl.Uniform3fv(shader.Uniform("lightPosition"), position[:])
 
 	for _, node := range scene.nodes {
-		model := transformModel(node.transform, scene.transform)
-		gl.UniformMatrix4fv(shader.Uniform("model"), model[:])
+		shader = scene.shader
+		if node.shader != nil {
+			shader = node.shader
+		}
+		shader.Use()
 
+		// TODO: Move these into node.Draw?
+		model := transformModel(node.transform, scene.transform)
 		normal := model.Mul4(view).Inv().Transpose()
+
+		// Light
+		gl.Uniform3fv(shader.Uniform("lightIntensities"), []float32{0.6, 0.6, 0.6})
+		gl.Uniform3fv(shader.Uniform("lightPosition"), position[:])
+
+		// Camera space
+		gl.UniformMatrix4fv(shader.Uniform("model"), model[:])
+		gl.UniformMatrix4fv(shader.Uniform("view"), view[:])
+		gl.UniformMatrix4fv(shader.Uniform("projection"), projection[:])
 		gl.UniformMatrix4fv(shader.Uniform("normalMatrix"), normal[:])
+		gl.UniformMatrix4fv(shader.Uniform("cameraPos"), position[:])
 
 		node.Draw(shader, camera)
 	}

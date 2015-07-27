@@ -1,4 +1,4 @@
-BINARY = "linerage3d"
+BINARY=linerage3d
 
 $(BINARY): *.go
 	go build $(TAGS) .
@@ -6,8 +6,13 @@ $(BINARY): *.go
 run: $(BINARY)
 	./$(BINARY)
 
+debug: clean
+	$(eval TAGS=-tags gldebug)
+
 test:
 	go test
 
 clean:
-	rm $(BINARY)
+	rm -f $(BINARY)
+
+.PHONY: debug
