@@ -31,18 +31,30 @@ func RandomParticle(origin mgl.Vec3, force float32) *particle {
 
 }
 
+const particleLen = 9 * 3
+
 type particle struct {
 	position mgl.Vec3
 	velocity mgl.Vec3
 }
 
 func (p *particle) Vertices() []float32 {
-	pos := p.position
 	var size float32 = 0.1
+	pos := p.position
+	a := pos.Add(mgl.Vec3{-size / 2, -size * 2, 0})
+	b := pos.Add(mgl.Vec3{size / 2, -size, 0})
 	return []float32{
 		pos[0], pos[1], pos[2], // Top
 		pos[0] - size, pos[1] - size, pos[2], // Bottom left
 		pos[0] + size, pos[1] - size, pos[2], // Bottom right
+
+		// Arrow handle
+		b[0], b[1], b[2], // Top Right
+		a[0], b[1], a[2], // Top Left
+		a[0], a[1], a[2], // Bottom Left
+		a[0], a[1], a[2], // Bottom Left
+		b[0], b[1], b[2], // Top Right
+		b[0], a[1], b[2], // Bottom Right
 	}
 }
 
@@ -55,7 +67,7 @@ var particleForce float32 = 0.06
 var gravityForce = mgl.Vec3{0, -0.1, 0}
 
 func ParticleEmitter(origin mgl.Vec3, num int, rate float32) Emitter {
-	bufSize := num * vertexDim * vertexDim * vecSize
+	bufSize := num * particleLen * vecSize
 	vbo := gl.CreateBuffer()
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferInit(gl.ARRAY_BUFFER, bufSize, gl.DYNAMIC_DRAW)
@@ -138,7 +150,7 @@ func (emitter *particleEmitter) Draw(shader Shader, camera Camera) {
 	gl.EnableVertexAttribArray(shader.Attrib("vertCoord"))
 	gl.VertexAttribPointer(shader.Attrib("vertCoord"), vertexDim, gl.FLOAT, false, emitter.Stride(), 0)
 
-	gl.DrawArrays(gl.TRIANGLES, 0, emitter.Len()*vertexDim)
+	gl.DrawArrays(gl.TRIANGLES, 0, emitter.Len()*particleLen/vertexDim)
 
 	gl.DisableVertexAttribArray(shader.Attrib("vertCoord"))
 }
