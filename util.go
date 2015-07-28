@@ -233,3 +233,21 @@ func Quad(a mgl.Vec3, b mgl.Vec3) []float32 {
 		b[0], a[1], b[2], // Bottom Right
 	}
 }
+
+func Upvote(tip mgl.Vec3, size float32) []float32 {
+	a := tip.Add(mgl.Vec3{-size / 2, -size * 2, 0})
+	b := tip.Add(mgl.Vec3{size / 2, -size, 0})
+	return []float32{
+		tip[0], tip[1], tip[2], // Top
+		tip[0] - size, tip[1] - size, tip[2], // Bottom left
+		tip[0] + size, tip[1] - size, tip[2], // Bottom right
+
+		// Arrow handle
+		b[0], b[1], b[2], // Top Right
+		a[0], b[1], a[2], // Top Left
+		a[0], a[1], a[2], // Bottom Left
+		a[0], a[1], a[2], // Bottom Left
+		b[0], b[1], b[2], // Top Right
+		b[0], a[1], b[2], // Bottom Right
+	}
+}

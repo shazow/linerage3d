@@ -28,6 +28,7 @@ type Engine struct {
 
 	started time.Time
 
+	light   *Light
 	line    *Line
 	emitter Emitter
 
@@ -76,7 +77,7 @@ func (e *Engine) Start() {
 	e.line.Buffer(0)
 	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
 
-	e.emitter = ParticleEmitter(mgl.Vec3{0, 1, 1}, 100, 0.01)
+	e.emitter = ParticleEmitter(mgl.Vec3{0, 1, 1}, 20, 1)
 	e.scene.nodes = append(e.scene.nodes, Node{Shape: e.emitter, shader: particleShader})
 
 	/*
@@ -95,6 +96,10 @@ func (e *Engine) Start() {
 			Shape: NewFloor(Node{Shape: shape}),
 		})
 	*/
+
+	// Light
+	e.light = &Light{color: mgl.Vec3{0.7, 0.5, 0.5}, position: e.line.position}
+	e.scene.lights = append(e.scene.lights, e.light)
 
 	// Toggle keys
 	e.bindings.On(KeyPause, func(_ KeyBinding) {
@@ -197,9 +202,10 @@ func (e *Engine) Draw(c config.Event) {
 	//e.scene.transform = &rotation
 
 	if !e.paused {
-		e.emitter.Tick(since)
 		e.line.Tick(since, lineRotate)
+		e.light.MoveTo(e.line.position)
 		e.emitter.MoveTo(e.line.position)
+		e.emitter.Tick(since)
 	}
 	e.scene.Draw(e.camera)
 
@@ -217,9 +223,7 @@ func main() {
 	engine := Engine{
 		camera:   camera,
 		bindings: DefaultBindings(),
-		scene: &Scene{
-			ambientColor: mgl.Vec3{0.5, 0.5, 0.5},
-		},
+		scene:    &Scene{},
 	}
 
 	app.Main(func(a app.App) {

@@ -39,22 +39,17 @@ type particle struct {
 }
 
 func (p *particle) Vertices() []float32 {
-	var size float32 = 0.1
-	pos := p.position
-	a := pos.Add(mgl.Vec3{-size / 2, -size * 2, 0})
-	b := pos.Add(mgl.Vec3{size / 2, -size, 0})
+	v := p.velocity.Normalize()
 	return []float32{
-		pos[0], pos[1], pos[2], // Top
-		pos[0] - size, pos[1] - size, pos[2], // Bottom left
-		pos[0] + size, pos[1] - size, pos[2], // Bottom right
-
-		// Arrow handle
-		b[0], b[1], b[2], // Top Right
-		a[0], b[1], a[2], // Top Left
-		a[0], a[1], a[2], // Bottom Left
-		a[0], a[1], a[2], // Bottom Left
-		b[0], b[1], b[2], // Top Right
-		b[0], a[1], b[2], // Bottom Right
+		p.position[0] + v[0]*0.1,
+		p.position[1] + v[1]*0.1,
+		p.position[2] + v[2]*0.1,
+		p.position[0] - v[0]*0.05,
+		p.position[1] - v[1]*0.05,
+		p.position[2] + v[2]*0.05,
+		p.position[0] + v[0]*0.05,
+		p.position[1] - v[1]*0.05,
+		p.position[2] + v[2]*0.05,
 	}
 }
 
@@ -63,8 +58,8 @@ func (p *particle) Tick(force mgl.Vec3) {
 	p.position = p.position.Add(p.velocity)
 }
 
-var particleForce float32 = 0.06
-var gravityForce = mgl.Vec3{0, -0.1, 0}
+var particleForce float32 = 0.09
+var gravityForce = mgl.Vec3{0, -0.2, 0}
 
 func ParticleEmitter(origin mgl.Vec3, num int, rate float32) Emitter {
 	bufSize := num * particleLen * vecSize

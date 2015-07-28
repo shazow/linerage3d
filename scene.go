@@ -12,6 +12,10 @@ type Light struct {
 	position mgl.Vec3
 }
 
+func (light *Light) MoveTo(position mgl.Vec3) {
+	light.position = position
+}
+
 // TODO: node tree with transforms
 type Node struct {
 	Shape
@@ -28,14 +32,13 @@ type Scene struct {
 	shader Shader
 	skybox Shape
 
-	ambientColor mgl.Vec3
-	lights       []Light
-	nodes        []Node
-	transform    *mgl.Mat4
+	lights    []*Light
+	nodes     []Node
+	transform *mgl.Mat4
 }
 
 func (scene *Scene) String() string {
-	return fmt.Sprintf("%d nodes, %d lights, ambient %+v", len(scene.nodes), len(scene.lights), scene.ambientColor)
+	return fmt.Sprintf("%d nodes, %d lights, ambient %+v", len(scene.nodes), len(scene.lights))
 }
 
 func (scene *Scene) Draw(camera Camera) {
@@ -48,6 +51,14 @@ func (scene *Scene) Draw(camera Camera) {
 	// Setup MVP
 	projection, view, position := camera.Projection(), camera.View(), camera.Position()
 
+	for _, light := range scene.lights {
+		// Light
+		gl.Uniform3fv(shader.Uniform("lightIntensities"), light.color[:])
+		gl.Uniform3fv(shader.Uniform("lightPosition"), light.position[:])
+		fmt.Println(light.position)
+		break
+	}
+
 	for _, node := range scene.nodes {
 		shader = scene.shader
 		if node.shader != nil {
@@ -58,10 +69,6 @@ func (scene *Scene) Draw(camera Camera) {
 		// TODO: Move these into node.Draw?
 		model := transformModel(node.transform, scene.transform)
 		normal := model.Mul4(view).Inv().Transpose()
-
-		// Light
-		gl.Uniform3fv(shader.Uniform("lightIntensities"), []float32{0.6, 0.6, 0.6})
-		gl.Uniform3fv(shader.Uniform("lightPosition"), position[:])
 
 		// Camera space
 		gl.UniformMatrix4fv(shader.Uniform("model"), model[:])

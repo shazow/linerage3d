@@ -9,6 +9,7 @@ uniform mat4 normalMatrix;
 attribute vec3 vertCoord;
 attribute vec3 vertNormal;
 
+varying vec3 fragPos;
 varying vec3 fragCoord;
 varying vec3 fragNormal;
 
@@ -18,6 +19,7 @@ void main(){
 
     gl_Position = projection * vertPos4;
 
-    fragCoord = vec3(vertPos4) / vertPos4.w;
-    fragNormal = normalize(vec3(model * vec4(vertNormal, 0.0)));
+    fragPos = vec3(vertPos4) / vertPos4.w;
+    fragCoord = vertCoord;
+    fragNormal = normalize(vec3(model * normalMatrix * vec4(vertNormal, 0.0)));
 }
