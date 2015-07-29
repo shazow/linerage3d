@@ -122,8 +122,8 @@ func (e *Engine) Stop() {
 }
 
 func (e *Engine) Config(new, old config.Event) {
-	e.touchLoc = geom.Point{new.Width / 2, new.Height / 2}
-	e.camera.SetPerspective(0.785, float32(new.Width/new.Height), 0.1, 100.0)
+	e.touchLoc = geom.Point{new.WidthPt / 2, new.HeightPt / 2}
+	e.camera.SetPerspective(0.785, float32(new.WidthPt/new.HeightPt), 0.1, 100.0)
 }
 
 func (e *Engine) Touch(t touch.Event, c config.Event) {
