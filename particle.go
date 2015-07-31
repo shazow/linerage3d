@@ -82,19 +82,16 @@ type particleEmitter struct {
 	rate      float32
 	particles []*particle
 	num       int
-	lastTick  time.Duration
 }
 
 func (emitter *particleEmitter) MoveTo(pos mgl.Vec3) {
 	emitter.origin = pos
 }
 
-func (emitter *particleEmitter) Tick(since time.Duration) {
-	interval := float32((since - emitter.lastTick).Seconds())
-	emitter.lastTick = since
-
+func (emitter *particleEmitter) Tick(interval time.Duration) {
 	// Randomize emitting
-	n := int(emitter.rate * interval * rand.Float32())
+	t := float32(interval.Seconds())
+	n := int(emitter.rate * t * rand.Float32())
 
 	extra := len(emitter.particles) + 1 + n - emitter.num
 	if extra > 0 {
@@ -107,7 +104,7 @@ func (emitter *particleEmitter) Tick(since time.Duration) {
 		emitter.particles = append(emitter.particles, p)
 	}
 
-	f := gravityForce.Mul(interval)
+	f := gravityForce.Mul(t)
 	for _, particle := range emitter.particles {
 		particle.Tick(f)
 	}
@@ -150,6 +147,7 @@ func (emitter *particleEmitter) Draw(shader Shader, camera Camera) {
 	gl.DisableVertexAttribArray(shader.Attrib("vertCoord"))
 }
 
-func (emitter *particleEmitter) Close() {
+func (emitter *particleEmitter) Close() error {
 	gl.DeleteBuffer(emitter.VBO)
+	return nil
 }

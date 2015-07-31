@@ -7,11 +7,13 @@ import (
 	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
+const turnSpeed = 0.05
+
 func NewLine(shape *DynamicShape) *Line {
 	return &Line{
 		DynamicShape: shape,
 
-		rate:   time.Second / 5.0,
+		rate:   time.Second / 6,
 		height: 1.0,
 		length: 0.5,
 	}
@@ -20,7 +22,7 @@ func NewLine(shape *DynamicShape) *Line {
 type Line struct {
 	*DynamicShape
 
-	lastMove time.Duration
+	interval time.Duration
 	rate     time.Duration
 
 	lastTurn mgl.Vec3
@@ -33,17 +35,17 @@ type Line struct {
 	offset  int
 }
 
-func (line *Line) Tick(since time.Duration, rotate float32) {
+func (line *Line) Tick(interval time.Duration, rotate float32) {
 	if rotate != 0 {
 		line.angle += rotate
 		line.turning = true
 	}
 
-	if line.lastMove+line.rate > since {
+	line.interval += interval
+	if line.interval < line.rate {
 		return
 	}
-
-	line.lastMove = since
+	line.interval -= line.rate
 
 	line.Add(line.angle)
 	line.Buffer(line.offset)

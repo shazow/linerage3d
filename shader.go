@@ -1,6 +1,10 @@
 package main
 
-import "golang.org/x/mobile/gl"
+import (
+	"fmt"
+
+	"golang.org/x/mobile/gl"
+)
 
 // TODO: Need a ShaderRegistry of somekind, ideally with support for default
 // scene values vs per-shape values and attribute checking.
@@ -8,7 +12,7 @@ import "golang.org/x/mobile/gl"
 
 type Shader interface {
 	Use()
-	Close()
+	Close() error
 	Attrib(string) gl.Attrib
 	Uniform(string) gl.Uniform
 }
@@ -55,6 +59,58 @@ func (shader *shader) Use() {
 	gl.UseProgram(shader.program)
 }
 
-func (shader *shader) Close() {
+func (shader *shader) Close() error {
 	gl.DeleteProgram(shader.program)
+	return nil
+}
+
+type Shaders interface {
+	Load(...string) error
+	Get(string) Shader
+	Close() error
+}
+
+func ShaderLoader() *shaderLoader {
+	return &shaderLoader{
+		shaders: map[string]*shader{},
+	}
+}
+
+type shaderLoader struct {
+	shaders map[string]*shader
+}
+
+func (loader *shaderLoader) Load(names ...string) error {
+	for _, name := range names {
+		s, err := NewShader(
+			fmt.Sprintf("%s.v.glsl", name),
+			fmt.Sprintf("%s.f.glsl", name),
+		)
+		if err != nil {
+			return err
+		}
+		loader.shaders[name] = s.(*shader)
+	}
+	return nil
+}
+
+func (loader *shaderLoader) Get(name string) Shader {
+	return loader.shaders[name]
+}
+
+func (loader *shaderLoader) Reload() error {
+	for k, _ := range loader.shaders {
+		err := loader.Load(k)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (loader *shaderLoader) Close() error {
+	for _, shader := range loader.shaders {
+		shader.Close()
+	}
+	return nil
 }

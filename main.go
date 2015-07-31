@@ -18,88 +18,38 @@ import (
 )
 
 const mouseSensitivity = 0.01
-const turnSpeed = 0.05
 const moveSpeed = 0.1
 
 type Engine struct {
 	camera   *QuatCamera
-	scene    *Scene
 	bindings *Bindings
+	scene    Scene
+	shaders  Shaders
+	world    World
 
-	started time.Time
+	started  time.Time
+	lastTick time.Time
 
-	light   *Light
-	line    *Line
-	emitter Emitter
-
-	touchLoc   geom.Point
-	dragOrigin geom.Point
-	dragging   bool
-	paused     bool
-	following  bool
-
+	touchLoc     geom.Point
+	dragOrigin   geom.Point
+	dragging     bool
+	paused       bool
+	following    bool
 	followOffset mgl.Vec3
 }
 
 func (e *Engine) Start() {
 	var err error
 
-	// Setup scene shader
-	e.scene.shader, err = NewShader("shader.v.glsl", "shader.f.glsl")
-	if err != nil {
-		fail(1, "Failed to load shaders:", err)
-	}
-
-	particleShader, err := NewShader("particle.v.glsl", "particle.f.glsl")
-	if err != nil {
-		fail(1, "Failed to load shaders:", err)
-	}
-
-	// Setup skybox
-	skyboxTex, err := LoadTextureCube("square.png")
-	if err != nil {
-		fail(1, "Failed to load texture:", err)
-	}
-	skyboxShader, err := NewShader("skybox.v.glsl", "skybox.f.glsl")
-	if err != nil {
-		fail(1, "Failed to load shaders:", err)
-	}
-	e.scene.skybox = NewSkybox(skyboxShader, skyboxTex)
-
 	e.followOffset = mgl.Vec3{0, 10, -3}
 	e.camera.MoveTo(e.followOffset)
 	e.camera.RotateTo(mgl.Vec3{0, 0, 5})
 
-	shape := NewDynamicShape(6 * 4 * 1000)
-	e.line = NewLine(shape)
-	e.line.Add(0)
-	e.line.Add(0)
-	e.line.Buffer(0)
-	e.scene.nodes = append(e.scene.nodes, Node{Shape: shape})
-
-	e.emitter = ParticleEmitter(mgl.Vec3{0, 1, 1}, 20, 1)
-	e.scene.nodes = append(e.scene.nodes, Node{Shape: e.emitter, shader: particleShader})
-
-	/*
-		// Cube for funsies:
-		cube := NewStaticShape()
-		cube.vertices = skyboxVertices
-		cube.normals = skyboxNormals
-		cube.indices = skyboxIndices
-		cube.Buffer()
-		e.scene.nodes = append(e.scene.nodes, Node{Shape: cube})
-	*/
-
-	/*
-		// Reflective floor
-		e.scene.nodes = append(e.scene.nodes, Node{
-			Shape: NewFloor(Node{Shape: shape}),
-		})
-	*/
-
-	// Light
-	e.light = &Light{color: mgl.Vec3{0.7, 0.5, 0.5}, position: e.line.position}
-	e.scene.lights = append(e.scene.lights, e.light)
+	e.shaders = ShaderLoader()
+	e.world, err = LinerageWorld(e.scene, e.bindings, e.shaders)
+	if err != nil {
+		fail(1, "failed to create world: %s", err)
+	}
 
 	// Toggle keys
 	e.bindings.On(KeyPause, func(_ KeyBinding) {
@@ -112,13 +62,13 @@ func (e *Engine) Start() {
 	})
 
 	e.started = time.Now()
+	e.lastTick = e.started
 
 	log.Println("Starting: ", e.scene.String())
 }
 
 func (e *Engine) Stop() {
-	e.scene.shader.Close()
-	gl.DeleteBuffer(e.line.VBO)
+	e.shaders.Close()
 }
 
 func (e *Engine) Config(new, old config.Event) {
@@ -132,7 +82,6 @@ func (e *Engine) Touch(t touch.Event, c config.Event) {
 		e.dragging = true
 	} else if t.Type == touch.TypeEnd {
 		e.dragging = false
-		log.Println("vertices=", e.line.Len(), e.camera.String())
 	}
 	e.touchLoc = t.Loc
 	if e.dragging {
@@ -152,17 +101,12 @@ func (e *Engine) Press(t key.Event, c config.Event) {
 }
 
 func (e *Engine) Draw(c config.Event) {
-	since := time.Now().Sub(e.started)
+	now := time.Now()
+	interval := now.Sub(e.lastTick)
+	e.lastTick = now
 
 	// Handle key presses
-	var lineRotate float32
 	var camDelta mgl.Vec3
-	if e.bindings.Pressed(KeyLineLeft) {
-		lineRotate -= turnSpeed
-	}
-	if e.bindings.Pressed(KeyLineRight) {
-		lineRotate += turnSpeed
-	}
 	if e.bindings.Pressed(KeyCamForward) {
 		camDelta[2] -= moveSpeed
 	}
@@ -185,7 +129,8 @@ func (e *Engine) Draw(c config.Event) {
 		e.following = false
 		e.camera.Move(camDelta)
 	} else if e.following {
-		e.camera.Lerp(e.line.position.Add(e.followOffset), e.line.position, 0.1)
+		pos := e.world.Focus()
+		e.camera.Lerp(pos.Add(e.followOffset), pos, 0.1)
 	}
 
 	gl.ClearColor(0, 0, 0, 1)
@@ -197,15 +142,8 @@ func (e *Engine) Draw(c config.Event) {
 	//gl.DepthFunc(gl.LESS)
 	//gl.SampleCoverage(4.0, false)
 
-	// Spinny!
-	//rotation := mgl.HomogRotate3D(float32(since.Seconds()), AxisFront)
-	//e.scene.transform = &rotation
-
 	if !e.paused {
-		e.line.Tick(since, lineRotate)
-		e.light.MoveTo(e.line.position)
-		e.emitter.MoveTo(e.line.position)
-		e.emitter.Tick(since)
+		e.world.Tick(interval)
 	}
 	e.scene.Draw(e.camera)
 
@@ -223,7 +161,7 @@ func main() {
 	engine := Engine{
 		camera:   camera,
 		bindings: DefaultBindings(),
-		scene:    &Scene{},
+		scene:    NewScene(),
 	}
 
 	app.Main(func(a app.App) {

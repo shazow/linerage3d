@@ -38,7 +38,7 @@ var skyboxIndices = []uint8{
 	1, 4, 2, 2, 4, 6,
 }
 
-func NewSkybox(shader Shader, texture gl.Texture) Shape {
+func NewSkybox(shader Shader, texture gl.Texture) Drawable {
 	skyboxShape := NewStaticShape()
 	skyboxShape.vertices = skyboxVertices
 	skyboxShape.indices = skyboxIndices
@@ -58,7 +58,15 @@ type Skybox struct {
 	shader Shader
 }
 
-func (shape *Skybox) Draw(_ Shader, camera Camera) {
+func (shape *Skybox) Transform(parent *mgl.Mat4) mgl.Mat4 {
+	return mgl.Ident4()
+}
+
+func (shape *Skybox) UseShader(parent Shader) (Shader, bool) {
+	return shape.shader, false
+}
+
+func (shape *Skybox) Draw(camera Camera) {
 	shader := shape.shader
 	shader.Use()
 
@@ -102,12 +110,13 @@ var floorNormals = []float32{
 }
 
 type Floor struct {
-	Shape
-	reflected []Node
-	transform *mgl.Mat4
+	Node
+	reflected []Drawable
 }
 
-func (scene *Floor) Draw(shader Shader, camera Camera) {
+func (scene *Floor) Draw(camera Camera) {
+	shader, _ := scene.UseShader(nil)
+
 	gl.Enable(gl.STENCIL_TEST)
 	gl.StencilFunc(gl.ALWAYS, 1, 0xFF)
 	gl.StencilOp(gl.KEEP, gl.KEEP, gl.REPLACE)
@@ -127,27 +136,31 @@ func (scene *Floor) Draw(shader Shader, camera Camera) {
 	view := camera.View()
 	gl.Uniform4fv(shader.Uniform("surfaceColor"), []float32{0.2, 0.2, 0.2, 1})
 	for _, node := range scene.reflected {
-		model := transformModel(node.transform, scene.transform)
+		model := node.Transform(scene.transform)
 		gl.UniformMatrix4fv(shader.Uniform("model"), model[:])
 
 		normal := model.Mul4(view).Inv().Transpose()
 		gl.UniformMatrix4fv(shader.Uniform("normalMatrix"), normal[:])
 
-		node.Draw(shader, camera)
+		node.Draw(camera)
 	}
 
 	gl.Disable(gl.STENCIL_TEST)
 	gl.Uniform4fv(shader.Uniform("surfaceColor"), []float32{0, 0, 0, 0})
 }
 
-func NewFloor(reflected ...Node) Shape {
+func NewFloor(shader Shader, reflected ...Drawable) Drawable {
 	floor := NewStaticShape()
 	floor.vertices = floorVertices
 	floor.normals = floorNormals
 	floor.Buffer()
 	flipped := mgl.Scale3D(1, -1, 1)
 	return &Floor{
-		Shape: floor, reflected: reflected,
-		transform: &flipped,
+		Node: Node{
+			Shape:     floor,
+			transform: &flipped,
+			shader:    shader,
+		},
+		reflected: reflected,
 	}
 }

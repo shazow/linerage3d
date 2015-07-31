@@ -8,7 +8,7 @@ const normalDim = 3
 const vecSize = 4
 
 type Shape interface {
-	Close()
+	Close() error
 	Stride() int
 	Len() int
 	Draw(Shader, Camera)
@@ -51,9 +51,10 @@ func (shape *StaticShape) Bytes() []byte {
 	return shape.BytesOffset(0)
 }
 
-func (shape *StaticShape) Close() {
+func (shape *StaticShape) Close() error {
 	gl.DeleteBuffer(shape.VBO)
 	gl.DeleteBuffer(shape.IBO)
+	return nil
 }
 
 func (shape *StaticShape) BytesOffset(n int) []byte {

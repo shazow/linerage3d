@@ -58,6 +58,7 @@ type DimSlicer interface {
 
 // EncodeObjects converts float32 vertices into a LittleEndian byte array.
 // Offset and length are based on the number of rows per dimension.
+// TODO: Replace with https://github.com/lunixbochs/struc?
 func EncodeObjects(offset int, length int, objects ...DimSlicer) []byte {
 	//log.Println("EncodeObjects:", offset, length, objects)
 	// TODO: Pre-allocate?
@@ -219,6 +220,28 @@ func AppendIndexed(slice []float32, idx *[]int, vertices ...float32) []float32 {
 	}
 
 	return r
+}
+
+// MultiMul multiplies every non-nil Mat4 reference and returns the result. If
+// none are given, then it returns the identity matrix.
+func MultiMul(matrices ...*mgl.Mat4) mgl.Mat4 {
+	var r mgl.Mat4
+	ok := false
+	for _, m := range matrices {
+		if m == nil {
+			continue
+		}
+		if !ok {
+			r = *m
+			ok = true
+			continue
+		}
+		r = r.Mul4(*m)
+	}
+	if ok {
+		return r
+	}
+	return mgl.Ident4()
 }
 
 func Quad(a mgl.Vec3, b mgl.Vec3) []float32 {

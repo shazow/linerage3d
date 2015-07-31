@@ -16,6 +16,12 @@ func (light *Light) MoveTo(position mgl.Vec3) {
 	light.position = position
 }
 
+type Drawable interface {
+	Draw(Camera)
+	Transform(*mgl.Mat4) mgl.Mat4
+	UseShader(Shader) (Shader, bool)
+}
+
 // TODO: node tree with transforms
 type Node struct {
 	Shape
@@ -23,74 +29,85 @@ type Node struct {
 	shader    Shader
 }
 
+func (node *Node) Draw(camera Camera) {
+	node.Shape.Draw(node.shader, camera)
+}
+
+func (node *Node) UseShader(parent Shader) (Shader, bool) {
+	if node.shader == nil || node.shader == parent {
+		node.shader = parent
+		return parent, false
+	}
+	node.shader.Use()
+	return node.shader, true
+}
+
+func (node *Node) Transform(parent *mgl.Mat4) mgl.Mat4 {
+	return MultiMul(node.transform, parent)
+}
+
 func (node *Node) String() string {
 	return fmt.Sprintf("<Shape of %d vertices; transform: %v>", node.Len(), node.transform)
 }
 
-type Scene struct {
-	// TODO: Add a shader registry instead
-	shader Shader
-	skybox Shape
+type Scene interface {
+	Add(interface{})
+	Draw(Camera)
+	String() string
+}
 
+func NewScene() Scene {
+	return &sliceScene{
+		lights: []*Light{},
+		nodes:  []Drawable{},
+	}
+}
+
+type sliceScene struct {
 	lights    []*Light
-	nodes     []Node
+	nodes     []Drawable
 	transform *mgl.Mat4
 }
 
-func (scene *Scene) String() string {
-	return fmt.Sprintf("%d nodes, %d lights, ambient %+v", len(scene.nodes), len(scene.lights))
+func (scene *sliceScene) String() string {
+	return fmt.Sprintf("%d nodes, %d lights", len(scene.nodes), len(scene.lights))
 }
 
-func (scene *Scene) Draw(camera Camera) {
-	if scene.skybox != nil {
-		scene.skybox.Draw(scene.shader, camera)
+func (scene *sliceScene) Add(item interface{}) {
+	switch item := item.(type) {
+	case *Light:
+		scene.lights = append(scene.lights, item)
+	default:
+		scene.nodes = append(scene.nodes, item.(Drawable))
 	}
+}
 
-	shader := scene.shader
-
+func (scene *sliceScene) Draw(camera Camera) {
 	// Setup MVP
 	projection, view, position := camera.Projection(), camera.View(), camera.Position()
 
-	for _, light := range scene.lights {
-		// Light
-		gl.Uniform3fv(shader.Uniform("lightIntensities"), light.color[:])
-		gl.Uniform3fv(shader.Uniform("lightPosition"), light.position[:])
-		fmt.Println(light.position)
-		break
-	}
-
+	light := scene.lights[0]
+	var parentShader Shader
 	for _, node := range scene.nodes {
-		shader = scene.shader
-		if node.shader != nil {
-			shader = node.shader
+		shader, changed := node.UseShader(parentShader)
+
+		if changed {
+			// TODO: Pre-load these into relevant shaders?
+			gl.Uniform3fv(shader.Uniform("lightIntensities"), light.color[:])
+			gl.Uniform3fv(shader.Uniform("lightPosition"), light.position[:])
+			gl.UniformMatrix4fv(shader.Uniform("cameraPos"), position[:])
+			gl.UniformMatrix4fv(shader.Uniform("view"), view[:])
+			gl.UniformMatrix4fv(shader.Uniform("projection"), projection[:])
 		}
-		shader.Use()
 
 		// TODO: Move these into node.Draw?
-		model := transformModel(node.transform, scene.transform)
+		model := node.Transform(scene.transform)
 		normal := model.Mul4(view).Inv().Transpose()
 
 		// Camera space
 		gl.UniformMatrix4fv(shader.Uniform("model"), model[:])
-		gl.UniformMatrix4fv(shader.Uniform("view"), view[:])
-		gl.UniformMatrix4fv(shader.Uniform("projection"), projection[:])
 		gl.UniformMatrix4fv(shader.Uniform("normalMatrix"), normal[:])
-		gl.UniformMatrix4fv(shader.Uniform("cameraPos"), position[:])
 
-		node.Draw(shader, camera)
-	}
-}
-
-func transformModel(model *mgl.Mat4, scene *mgl.Mat4) mgl.Mat4 {
-	if model == nil && scene == nil {
-		return mgl.Ident4()
-	}
-	if model != nil && scene != nil {
-		return model.Mul4(*scene)
-	}
-	if model != nil {
-		return *model
-	} else {
-		return *scene
+		node.Draw(camera)
 	}
 }
