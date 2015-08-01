@@ -1,11 +1,32 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	mgl "github.com/go-gl/mathgl/mgl32"
 	"golang.org/x/mobile/gl"
 )
+
+// TODO: Load into here
+type lineShader struct {
+	Projection   [16]float32
+	View         [16]float32
+	Model        [16]float32
+	NormalMatrix [16]float32
+
+	Material struct {
+		Ambient    [3]float32
+		Diffuse    [3]float32
+		Specular   [3]float32
+		Shininess  float32
+		Refraction float32
+	}
+	Lights []struct {
+		Color     [3]float32
+		Intensity float32
+	}
+}
 
 const turnSpeed = 0.05
 
@@ -29,18 +50,6 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 	if err != nil {
 		return nil, err
 	}
-
-	// Add shader material
-	shader := shaders.Get("line")
-	shader.Use()
-	gl.Uniform3fv(shader.Uniform("material.ambient"), []float32{0.1, 0.15, 0.4})
-	gl.Uniform3fv(shader.Uniform("material.diffuse"), []float32{0.8, 0.6, 0.6})
-	gl.Uniform3fv(shader.Uniform("material.specular"), []float32{1.0, 1.0, 1.0})
-	//gl.Uniform1f(shader.Uniform("material.shininess"), 16.0)
-	//gl.Uniform1f(shader.Uniform("material.refraction"), 1.0/1.52)
-
-	gl.Uniform3fv(shader.Uniform("lights[0].color"), []float32{0.4, 0.2, 0.1})
-	gl.Uniform1f(shader.Uniform("lights[0].intensity"), 0.0)
 
 	//gl.Uniform3fv(shader.Uniform("lights[1].color"), []float32{0.4, 0.2, 0.1})
 	//gl.Uniform1f(shader.Uniform("lights[1].intensity"), 0.0)
@@ -75,6 +84,30 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 			Shape: NewFloor(Node{Shape: shape: lineShader}),
 		})
 	*/
+
+	loadUniforms := func() {
+		// Add shader material
+		shader := shaders.Get("line")
+		shader.Use()
+		gl.Uniform3fv(shader.Uniform("material.ambient"), []float32{0.1, 0.15, 0.4})
+		gl.Uniform3fv(shader.Uniform("material.diffuse"), []float32{0.8, 0.6, 0.6})
+		gl.Uniform3fv(shader.Uniform("material.specular"), []float32{1.0, 1.0, 1.0})
+		//gl.Uniform1f(shader.Uniform("material.shininess"), 16.0)
+		//gl.Uniform1f(shader.Uniform("material.refraction"), 1.0/1.52)
+
+		gl.Uniform3fv(shader.Uniform("lights[0].color"), []float32{0.4, 0.2, 0.1})
+		gl.Uniform1f(shader.Uniform("lights[0].intensity"), 0.0)
+	}
+	loadUniforms()
+
+	bindings.On(KeyReload, func(_ KeyBinding) {
+		log.Println("Reloading shaders.")
+		err := shaders.Reload()
+		if err != nil {
+			log.Println("Shader reload error:", err)
+		}
+		loadUniforms()
+	})
 
 	return &linerageWorld{
 		scene:    scene,

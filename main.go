@@ -180,7 +180,7 @@ func main() {
 				c = e
 			case paint.Event:
 				engine.Draw(c)
-				a.EndPaint()
+				a.EndPaint(e)
 			case touch.Event:
 				engine.Touch(e, c)
 			case key.Event:

@@ -16,6 +16,7 @@ const (
 	KeyLineRight
 	KeyCameraFollow
 	KeyPause
+	KeyReload
 )
 
 func DefaultBindings() *Bindings {
@@ -30,6 +31,7 @@ func DefaultBindings() *Bindings {
 		key.CodeLeftArrow:  KeyLineLeft,
 		key.CodeF:          KeyCameraFollow,
 		key.CodeSpacebar:   KeyPause,
+		key.CodeR:          KeyReload,
 	}
 	return &Bindings{
 		bindings: binding,

@@ -2,10 +2,7 @@
 
 precision mediump float;
 
-uniform vec3 lightPosition;
-uniform vec3 lightIntensities;
 uniform vec3 cameraCoord;
-uniform vec4 surfaceColor;
 uniform samplerCube tex;
 
 varying vec3 fragNormal;
@@ -35,13 +32,9 @@ uniform Material material;
 
 
 vec3 Light_BlinnPhong(Light light, vec3 fragPos) {
-    //if (distance(fragPos, light.position) < 1.0) {
-    //    return vec3(1.0, 1.0-distance(fragPos, light.position), 0);
-    //}
     // Based on https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_shading_model
 
     vec3 lightDir = normalize(light.position - fragPos);
-
     float lambertian = max(dot(lightDir, fragNormal), 0.0);
     float specular = 0.0;
 
@@ -61,7 +54,8 @@ vec3 Light_Glow(Light light, vec3 fragPos) {
     if (d > light.intensity) return vec3(0, 0, 0);
     if (d == 0.0) return light.color;
 
-    return light.color * (light.intensity-d) / d;
+    float intensity = (light.intensity-d) / d;
+    return light.color * intensity;
 
 }
 

@@ -67,6 +67,7 @@ func (shader *shader) Close() error {
 type Shaders interface {
 	Load(...string) error
 	Get(string) Shader
+	Reload() error
 	Close() error
 }
 
@@ -99,8 +100,12 @@ func (loader *shaderLoader) Get(name string) Shader {
 }
 
 func (loader *shaderLoader) Reload() error {
-	for k, _ := range loader.shaders {
-		err := loader.Load(k)
+	for k, shader := range loader.shaders {
+		err := LoadShaders(
+			shader.program,
+			fmt.Sprintf("%s.v.glsl", k),
+			fmt.Sprintf("%s.f.glsl", k),
+		)
 		if err != nil {
 			return err
 		}

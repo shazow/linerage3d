@@ -13,7 +13,6 @@ import (
 	mgl "github.com/go-gl/mathgl/mgl32"
 
 	"golang.org/x/mobile/asset"
-	"golang.org/x/mobile/exp/gl/glutil"
 	"golang.org/x/mobile/gl"
 )
 
@@ -94,22 +93,69 @@ func loadAsset(name string) ([]byte, error) {
 	return ioutil.ReadAll(f)
 }
 
+func loadShader(shaderType gl.Enum, assetName string) (gl.Shader, error) {
+	// Borrowed from golang.org/x/mobile/exp/gl/glutil
+	src, err := loadAsset(assetName)
+	if err != nil {
+		return gl.Shader{}, err
+	}
+
+	shader := gl.CreateShader(shaderType)
+	if shader.Value == 0 {
+		return gl.Shader{}, fmt.Errorf("failed to create shader (type %v)", shaderType)
+	}
+	gl.ShaderSource(shader, string(src))
+	gl.CompileShader(shader)
+	if gl.GetShaderi(shader, gl.COMPILE_STATUS) == 0 {
+		defer gl.DeleteShader(shader)
+		return gl.Shader{}, fmt.Errorf("shader compile: %s", gl.GetShaderInfoLog(shader))
+	}
+	return shader, nil
+}
+
+func LoadShaders(program gl.Program, vertexAsset, fragmentAsset string) error {
+	vertexShader, err := loadShader(gl.VERTEX_SHADER, vertexAsset)
+	if err != nil {
+		return err
+	}
+	fragmentShader, err := loadShader(gl.FRAGMENT_SHADER, fragmentAsset)
+	if err != nil {
+		gl.DeleteShader(vertexShader)
+		return err
+	}
+
+	if gl.GetProgrami(program, gl.ATTACHED_SHADERS) > 0 {
+		for _, shader := range gl.GetAttachedShaders(program) {
+			gl.DetachShader(program, shader)
+		}
+	}
+
+	gl.AttachShader(program, vertexShader)
+	gl.AttachShader(program, fragmentShader)
+	gl.LinkProgram(program)
+
+	// Flag shaders for deletion when program is unlinked.
+	gl.DeleteShader(vertexShader)
+	gl.DeleteShader(fragmentShader)
+
+	if gl.GetProgrami(program, gl.LINK_STATUS) == 0 {
+		defer gl.DeleteProgram(program)
+		return fmt.Errorf("LoadShaders: %s", gl.GetProgramInfoLog(program))
+	}
+	return nil
+}
+
 // LoadProgram reads shader sources from the asset repository, compiles, and
 // links them into a program.
-func LoadProgram(vertexAsset, fragmentAsset string) (p gl.Program, err error) {
+func LoadProgram(vertexAsset, fragmentAsset string) (program gl.Program, err error) {
 	log.Println("LoadProgram:", vertexAsset, fragmentAsset)
 
-	vertexSrc, err := loadAsset(vertexAsset)
-	if err != nil {
-		return
+	program = gl.CreateProgram()
+	if program.Value == 0 {
+		return gl.Program{}, fmt.Errorf("glutil: no programs available")
 	}
 
-	fragmentSrc, err := loadAsset(fragmentAsset)
-	if err != nil {
-		return
-	}
-
-	p, err = glutil.CreateProgram(string(vertexSrc), string(fragmentSrc))
+	err = LoadShaders(program, vertexAsset, fragmentAsset)
 	return
 }
 
