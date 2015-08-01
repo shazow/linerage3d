@@ -50,13 +50,8 @@ vec3 Light_BlinnPhong(Light light, vec3 fragPos)
         specular = pow(specAngle, material.shininess);
     }
 
-    vec3 colorLinear = lambertian * light.color + specular * material.specular;
-
-    // apply gamma correction (assume ambientColor, diffuseColor and lightIntensities
-    // have been linearized, i.e. have no gamma correction in them)
-    vec3 colorGammaCorrected = pow(colorLinear, vec3(1.0/screenGamma));
-
-    return colorGammaCorrected;
+    // Linearized, before gamma correction
+    return lambertian * light.color + specular * material.specular;
 }
 
 void main()
@@ -75,6 +70,8 @@ void main()
         fragColor += Light_BlinnPhong(lights[i], fragCoord);
     }
 
-    // use the gamma corrected color in the fragment
+    // Gamma correct
+    fragColor = pow(fragColor, vec3(1.0/screenGamma));
+
     gl_FragColor = vec4(fragColor, 1.0);
 }
