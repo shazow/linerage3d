@@ -34,8 +34,10 @@ struct Material
 uniform Material material;
 
 
-vec3 Light_BlinnPhong(Light light, vec3 fragPos)
-{
+vec3 Light_BlinnPhong(Light light, vec3 fragPos) {
+    //if (distance(fragPos, light.position) < 1.0) {
+    //    return vec3(1.0, 1.0-distance(fragPos, light.position), 0);
+    //}
     // Based on https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_shading_model
 
     vec3 lightDir = normalize(light.position - fragPos);
@@ -43,7 +45,7 @@ vec3 Light_BlinnPhong(Light light, vec3 fragPos)
     float lambertian = max(dot(lightDir, fragNormal), 0.0);
     float specular = 0.0;
 
-    if (lambertian > 0.0) {
+    if (lambertian > 0.0 && material.shininess > 0.0) {
         vec3 viewDir = normalize(-fragPos);
         vec3 halfDir = normalize(lightDir + viewDir);
         float specAngle = max(dot(halfDir, fragNormal), 0.0);
@@ -54,8 +56,16 @@ vec3 Light_BlinnPhong(Light light, vec3 fragPos)
     return lambertian * light.color + specular * material.specular;
 }
 
-void main()
-{
+vec3 Light_Glow(Light light, vec3 fragPos) {
+    float d = distance(fragPos, light.position);
+    if (d > light.intensity) return vec3(0, 0, 0);
+    if (d == 0.0) return light.color;
+
+    return light.color * (light.intensity-d) / d;
+
+}
+
+void main() {
     vec3 fragColor = material.ambient;
 
     // Reflect
@@ -65,9 +75,9 @@ void main()
         fragColor = vec3(mix(textureCube(tex, R), vec4(fragColor, 1.0), 0.5));
     }
 
-    for (int i = 0; i < maxLights; i++)
-    {
-        fragColor += Light_BlinnPhong(lights[i], fragCoord);
+    for (int i = 0; i < maxLights; i++) {
+        if (lights[i].intensity == 0.0) continue;
+        fragColor += Light_Glow(lights[i], fragCoord);
     }
 
     // Gamma correct

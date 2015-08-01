@@ -58,43 +58,33 @@ type Scene interface {
 
 func NewScene() Scene {
 	return &sliceScene{
-		lights: []*Light{},
-		nodes:  []Drawable{},
+		nodes: []Drawable{},
 	}
 }
 
 type sliceScene struct {
-	lights    []*Light
 	nodes     []Drawable
 	transform *mgl.Mat4
 }
 
 func (scene *sliceScene) String() string {
-	return fmt.Sprintf("%d nodes, %d lights", len(scene.nodes), len(scene.lights))
+	return fmt.Sprintf("%d nodes", len(scene.nodes))
 }
 
 func (scene *sliceScene) Add(item interface{}) {
-	switch item := item.(type) {
-	case *Light:
-		scene.lights = append(scene.lights, item)
-	default:
-		scene.nodes = append(scene.nodes, item.(Drawable))
-	}
+	scene.nodes = append(scene.nodes, item.(Drawable))
 }
 
 func (scene *sliceScene) Draw(camera Camera) {
 	// Setup MVP
 	projection, view, position := camera.Projection(), camera.View(), camera.Position()
 
-	light := scene.lights[0]
 	var parentShader Shader
 	for _, node := range scene.nodes {
 		shader, changed := node.UseShader(parentShader)
 
 		if changed {
 			// TODO: Pre-load these into relevant shaders?
-			gl.Uniform3fv(shader.Uniform("lightIntensities"), light.color[:])
-			gl.Uniform3fv(shader.Uniform("lightPosition"), light.position[:])
 			gl.UniformMatrix4fv(shader.Uniform("cameraPos"), position[:])
 			gl.UniformMatrix4fv(shader.Uniform("view"), view[:])
 			gl.UniformMatrix4fv(shader.Uniform("projection"), projection[:])

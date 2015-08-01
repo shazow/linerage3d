@@ -61,7 +61,7 @@ type DimSlicer interface {
 // TODO: Replace with https://github.com/lunixbochs/struc?
 func EncodeObjects(offset int, length int, objects ...DimSlicer) []byte {
 	//log.Println("EncodeObjects:", offset, length, objects)
-	// TODO: Pre-allocate?
+	// TODO: Pre-allocate? Use a SyncPool?
 	/*
 		dimSum := 0 // yum!
 		for _, obj := range objects {
@@ -79,9 +79,7 @@ func EncodeObjects(offset int, length int, objects ...DimSlicer) []byte {
 				panic(fmt.Sprintln("binary.Write failed:", err))
 			}
 		}
-
 	}
-
 	//fmt.Printf("Wrote %d vertices: %d to %d \t", shape.Len()-n, n, shape.Len())
 	//fmt.Println(wrote)
 

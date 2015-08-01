@@ -5,37 +5,52 @@ import (
 	"time"
 
 	mgl "github.com/go-gl/mathgl/mgl32"
+	"golang.org/x/mobile/gl"
 )
 
-const turnSpeed = 0.05
+func NewLine(shader Shader, bufSize int) *Line {
+	shape := NewDynamicShape(bufSize)
 
-func NewLine(shape *DynamicShape) *Line {
 	return &Line{
-		DynamicShape: shape,
-
-		rate:   time.Second / 6,
-		height: 1.0,
-		length: 0.5,
+		Node: Node{
+			Shape:  shape,
+			shader: shader,
+		},
+		shape:     shape,
+		rate:      time.Second / 6,
+		height:    1.0,
+		step:      0.5,
+		direction: mgl.Vec3{1, 0, 1}, // angle=0
 	}
 }
 
 type Line struct {
-	*DynamicShape
+	Node
+	shape *DynamicShape
 
 	interval time.Duration
 	rate     time.Duration
 
-	lastTurn mgl.Vec3
-	position mgl.Vec3
-	height   float32
-	length   float32
+	lastTurn  mgl.Vec3
+	position  mgl.Vec3
+	direction mgl.Vec3
+	height    float32
+	step      float32
 
-	angle   float32
+	angle   float64
 	turning bool
 	offset  int
 }
 
-func (line *Line) Tick(interval time.Duration, rotate float32) {
+func (line *Line) Draw(camera Camera) {
+	shader := line.Node.shader
+	gl.Uniform1f(shader.Uniform("lights[0].intensity"), 2.0)
+	gl.Uniform3fv(shader.Uniform("lights[0].position"), line.position[:])
+
+	line.Node.Draw(camera)
+}
+
+func (line *Line) Tick(interval time.Duration, rotate float64) {
 	if rotate != 0 {
 		line.angle += rotate
 		line.turning = true
@@ -48,22 +63,22 @@ func (line *Line) Tick(interval time.Duration, rotate float32) {
 	line.interval -= line.rate
 
 	line.Add(line.angle)
-	line.Buffer(line.offset)
+	line.shape.Buffer(line.offset)
 }
 
-func (line *Line) Add(angle float32) {
+func (line *Line) Add(angle float64) {
 	turning := line.turning || line.angle != angle
 	if turning {
 		line.angle = angle
 		line.lastTurn = line.position
+
+		sin, cos := math.Sin(angle), math.Cos(line.angle)
+		line.direction = mgl.Vec3{float32(cos - sin), 0, float32(sin + cos)}
 	}
 
-	// Rotate
-	sin, cos := float32(math.Sin(float64(angle))), float32(math.Cos(float64(angle)))
-	unit := mgl.Vec3{cos - sin, 0, sin + cos}
-
 	// Normalize and reset height
-	l := line.length / unit.Len()
+	unit := line.direction
+	l := line.step / unit.Len()
 	unit = mgl.Vec3{unit[0] * l, line.height, unit[2] * l}
 
 	p1 := line.lastTurn
@@ -75,21 +90,22 @@ func (line *Line) Add(angle float32) {
 	normal := pn[:]
 
 	line.position = p3
+	shape := line.shape
 
-	if !turning && len(line.vertices) >= len(quad) {
+	if !turning && len(shape.vertices) >= len(quad) {
 		// Replace
-		line.vertices = append(line.vertices[:len(line.vertices)-len(quad)], quad...)
+		shape.vertices = append(shape.vertices[:len(shape.vertices)-len(quad)], quad...)
 	} else {
-		line.offset = len(line.vertices) / vertexDim
-		line.vertices = append(line.vertices, quad...)
+		line.offset = len(shape.vertices) / vertexDim
+		shape.vertices = append(shape.vertices, quad...)
 	}
 	// TODO: Optimize by using indices
-	line.normals = append(line.normals, normal...)
-	line.normals = append(line.normals, normal...)
-	line.normals = append(line.normals, normal...)
-	line.normals = append(line.normals, normal...)
-	line.normals = append(line.normals, normal...)
-	line.normals = append(line.normals, normal...)
+	shape.normals = append(shape.normals, normal...)
+	shape.normals = append(shape.normals, normal...)
+	shape.normals = append(shape.normals, normal...)
+	shape.normals = append(shape.normals, normal...)
+	shape.normals = append(shape.normals, normal...)
+	shape.normals = append(shape.normals, normal...)
 
 	line.turning = false
 }
