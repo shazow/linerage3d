@@ -4,6 +4,7 @@ import (
 	"time"
 
 	mgl "github.com/go-gl/mathgl/mgl32"
+	"golang.org/x/mobile/gl"
 )
 
 type linerageWorld struct {
@@ -27,6 +28,19 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 	if err != nil {
 		return nil, err
 	}
+
+	// Add shader material
+	shader := shaders.Get("line")
+	shader.Use()
+	gl.Uniform3fv(shader.Uniform("material.ambient"), []float32{0.1, 0.15, 0.4})
+	gl.Uniform3fv(shader.Uniform("material.diffuse"), []float32{0.8, 0.6, 0.6})
+	gl.Uniform3fv(shader.Uniform("material.specular"), []float32{1.0, 1.0, 1.0})
+	gl.Uniform1f(shader.Uniform("material.shininess"), 16.0)
+	gl.Uniform1f(shader.Uniform("material.refraction"), 1.0/1.52)
+
+	gl.Uniform3fv(shader.Uniform("lights[0].color"), []float32{0.4, 0.3, 0.3})
+	gl.Uniform3fv(shader.Uniform("lights[0].position"), []float32{0, 20, 0})
+	gl.Uniform1f(shader.Uniform("lights[0].intensity"), 1.0)
 
 	// Make skybox
 	// TODO: Add closer, or use a texture loader

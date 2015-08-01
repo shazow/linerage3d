@@ -12,16 +12,33 @@ varying vec3 fragNormal;
 varying vec3 fragCoord;
 varying vec3 fragPos;
 
-const float shininess = 16.0;
 const float screenGamma = 2.2; // Assume the monitor is calibrated to the sRGB color space
-const float refractRatio = 1.0 / 1.52;
-const vec3 specColor = vec3(1.0, 1.0, 1.0);
+
+const int maxLights = 3;
+struct Light
+{
+    vec3 color;
+    vec3 position;
+    float intensity;
+};
+uniform Light lights[maxLights];
+
+struct Material
+{
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+    float refraction;
+};
+uniform Material material;
 
 
-vec3 Light_BlinnPhong(vec4 surface, float shine, vec3 fragPos, vec3 lightPos, vec3 lightColor) {
+vec3 Light_BlinnPhong(Light light, vec3 fragPos)
+{
     // Based on https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_shading_model
 
-    vec3 lightDir = normalize(lightPos - fragPos);
+    vec3 lightDir = normalize(light.position - fragPos);
 
     float lambertian = max(dot(lightDir, fragNormal), 0.0);
     float specular = 0.0;
@@ -30,10 +47,10 @@ vec3 Light_BlinnPhong(vec4 surface, float shine, vec3 fragPos, vec3 lightPos, ve
         vec3 viewDir = normalize(-fragPos);
         vec3 halfDir = normalize(lightDir + viewDir);
         float specAngle = max(dot(halfDir, fragNormal), 0.0);
-        //specular = pow(specAngle, shine);
+        specular = pow(specAngle, material.shininess);
     }
 
-    vec3 colorLinear = surface.rgb + lambertian * lightColor + specular * specColor;
+    vec3 colorLinear = lambertian * light.color + specular * material.specular;
 
     // apply gamma correction (assume ambientColor, diffuseColor and lightIntensities
     // have been linearized, i.e. have no gamma correction in them)
@@ -42,18 +59,22 @@ vec3 Light_BlinnPhong(vec4 surface, float shine, vec3 fragPos, vec3 lightPos, ve
     return colorGammaCorrected;
 }
 
-void main() {
-    vec3 I = normalize(fragPos - cameraCoord);
-    vec3 R = refract(I, fragNormal, refractRatio);
+void main()
+{
+    vec3 fragColor = material.ambient;
 
-    //vec4 surface = surfaceColor;
-    vec4 surface = vec4(0.1,0.15,0.4,1);
-    if (surface.a < 1.0) {
-        surface = mix(textureCube(tex, R), surface, surface.a);
+    // Reflect
+    if (material.refraction > 0.0) {
+        vec3 I = normalize(fragPos - cameraCoord);
+        vec3 R = refract(I, fragNormal, material.refraction);
+        fragColor = vec3(mix(textureCube(tex, R), vec4(fragColor, 1.0), 0.5));
     }
 
-    vec3 lit = Light_BlinnPhong(surface, shininess, fragCoord, lightPosition, vec3(1,1,1));
+    for (int i = 0; i < maxLights; i++)
+    {
+        fragColor += Light_BlinnPhong(lights[i], fragCoord);
+    }
 
     // use the gamma corrected color in the fragment
-    gl_FragColor = vec4(lit, surface.a);
+    gl_FragColor = vec4(fragColor, 1.0);
 }
