@@ -60,7 +60,7 @@ vec3 Light_Glow(Light light, vec3 fragPos) {
 }
 
 void main() {
-    vec3 fragColor = material.ambient;
+    vec3 fragColor = mix(material.ambient, fragCoord.yyy, 0.8);
 
     // Reflect
     if (material.refraction > 0.0) {

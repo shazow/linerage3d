@@ -51,9 +51,6 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 		return nil, err
 	}
 
-	//gl.Uniform3fv(shader.Uniform("lights[1].color"), []float32{0.4, 0.2, 0.1})
-	//gl.Uniform1f(shader.Uniform("lights[1].intensity"), 0.0)
-
 	// Make skybox
 	// TODO: Add closer, or use a texture loader
 	scene.Add(NewSkybox(shaders.Get("skybox"), skyboxTex))
@@ -62,6 +59,14 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 	line := NewLine(shaders.Get("line"), 2*4*100000)
 	line.Buffer(0)
 	scene.Add(line)
+
+	/*
+		shader := shaders.Get("line")
+		shader.Use()
+		gl.Uniform3fv(shader.Uniform("lights[1].color"), []float32{1.0, 0.9, 0.9})
+		gl.Uniform3fv(shader.Uniform("lights[1].position"), []float32{0.0, 20.0, 0.0})
+		gl.Uniform1f(shader.Uniform("lights[1].intensity"), 1.0)
+	*/
 
 	// Make particle emitter
 	emitter := ParticleEmitter(mgl.Vec3{0, 1, 1}, 20, 1)
@@ -79,9 +84,7 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 
 	/*
 		// Reflective floor
-		scene.nodes = append(scene.nodes, Node{
-			Shape: NewFloor(Node{Shape: shape: lineShader}),
-		})
+		scene.Add(NewFloor(shaders.Get("line"), line))
 	*/
 
 	loadUniforms := func() {
@@ -92,7 +95,7 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 		gl.Uniform3fv(shader.Uniform("material.diffuse"), []float32{0.8, 0.6, 0.6})
 		gl.Uniform3fv(shader.Uniform("material.specular"), []float32{1.0, 1.0, 1.0})
 		//gl.Uniform1f(shader.Uniform("material.shininess"), 16.0)
-		//gl.Uniform1f(shader.Uniform("material.refraction"), 1.0/1.52)
+		gl.Uniform1f(shader.Uniform("material.refraction"), 1.0/1.52)
 
 		gl.Uniform3fv(shader.Uniform("lights[0].color"), []float32{0.4, 0.2, 0.1})
 		gl.Uniform1f(shader.Uniform("lights[0].intensity"), 0.0)
