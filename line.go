@@ -20,9 +20,8 @@ func NewLine(shader Shader, bufSize int) *Line {
 	return &Line{
 		shader:    shader,
 		VBO:       vbo,
-		rate:      time.Second / 6,
 		height:    1.0,
-		step:      0.5,
+		step:      3.0,               // Per second
 		direction: mgl.Vec3{1, 0, 1}, // angle=0
 		position:  position,
 		segments:  []mgl.Vec3{position},
@@ -33,38 +32,27 @@ type Line struct {
 	shader Shader
 	VBO    gl.Buffer
 
-	interval time.Duration
-	rate     time.Duration
-
 	position  mgl.Vec3
 	direction mgl.Vec3
 	segments  []mgl.Vec3
 	height    float32
-	step      float32
 
+	step    float64
 	angle   float64
 	turning bool
 	offset  int
 }
 
 func (line *Line) Tick(interval time.Duration, rotate float64) {
-	if rotate != 0 {
-		line.angle += rotate
-		line.turning = true
-	}
+	step := float32(line.step * interval.Seconds())
 
-	line.interval += interval
-	if line.interval < line.rate {
-		return
-	}
-	line.interval -= line.rate
-
-	line.Add(line.angle)
+	line.Add(line.angle+rotate, step)
 	line.Buffer(line.offset)
+
 }
 
-func (line *Line) Add(angle float64) {
-	turning := line.turning || line.angle != angle
+func (line *Line) Add(angle float64, step float32) {
+	turning := line.angle != angle
 	if turning {
 		line.angle = angle
 		sin, cos := math.Sin(angle), math.Cos(line.angle)
@@ -73,7 +61,7 @@ func (line *Line) Add(angle float64) {
 
 	// Normalize and reset height
 	unit := line.direction
-	l := line.step / unit.Len()
+	l := step / unit.Len()
 	unit = mgl.Vec3{unit[0] * l, 0.0, unit[2] * l}
 	line.position = line.position.Add(unit)
 
@@ -84,8 +72,6 @@ func (line *Line) Add(angle float64) {
 		line.offset = len(line.segments)
 		line.segments = append(line.segments, line.position)
 	}
-
-	line.turning = false
 }
 
 // Shape interface:

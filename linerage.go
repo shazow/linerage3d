@@ -28,7 +28,7 @@ type lineShader struct {
 	}
 }
 
-const turnSpeed = 0.05
+const turnSpeed = 0.1
 
 type linerageWorld struct {
 	scene    Scene
@@ -59,7 +59,7 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 	scene.Add(NewSkybox(shaders.Get("skybox"), skyboxTex))
 
 	// Make line
-	line := NewLine(shaders.Get("line"), 6*4*10000)
+	line := NewLine(shaders.Get("line"), 2*4*100000)
 	line.Buffer(0)
 	scene.Add(line)
 

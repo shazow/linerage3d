@@ -13,6 +13,7 @@ import (
 	"golang.org/x/mobile/event/lifecycle"
 	"golang.org/x/mobile/event/paint"
 	"golang.org/x/mobile/event/touch"
+	"golang.org/x/mobile/exp/app/debug"
 	"golang.org/x/mobile/geom"
 	"golang.org/x/mobile/gl"
 )
@@ -147,6 +148,8 @@ func (e *Engine) Draw(c config.Event) {
 	}
 	e.scene.Draw(e.camera)
 
+	gl.Disable(gl.DEPTH_TEST)
+	debug.DrawFPS(c)
 }
 
 func fail(code int, format string, args ...interface{}) {
