@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"math"
 	"time"
 
@@ -9,45 +11,40 @@ import (
 )
 
 func NewLine(shader Shader, bufSize int) *Line {
-	shape := NewDynamicShape(bufSize)
+	vbo := gl.CreateBuffer()
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferInit(gl.ARRAY_BUFFER, bufSize, gl.DYNAMIC_DRAW)
+
+	position := mgl.Vec3{}
 
 	return &Line{
-		Node: Node{
-			Shape:  shape,
-			shader: shader,
-		},
-		shape:     shape,
+		shader:    shader,
+		VBO:       vbo,
 		rate:      time.Second / 6,
 		height:    1.0,
 		step:      0.5,
 		direction: mgl.Vec3{1, 0, 1}, // angle=0
+		position:  position,
+		segments:  []mgl.Vec3{position},
 	}
 }
 
 type Line struct {
-	Node
-	shape *DynamicShape
+	shader Shader
+	VBO    gl.Buffer
 
 	interval time.Duration
 	rate     time.Duration
 
-	lastTurn  mgl.Vec3
 	position  mgl.Vec3
 	direction mgl.Vec3
+	segments  []mgl.Vec3
 	height    float32
 	step      float32
 
 	angle   float64
 	turning bool
 	offset  int
-}
-
-func (line *Line) Draw(camera Camera) {
-	shader := line.Node.shader
-	gl.Uniform1f(shader.Uniform("lights[0].intensity"), 2.0)
-	gl.Uniform3fv(shader.Uniform("lights[0].position"), line.position[:])
-
-	line.Node.Draw(camera)
 }
 
 func (line *Line) Tick(interval time.Duration, rotate float64) {
@@ -63,15 +60,13 @@ func (line *Line) Tick(interval time.Duration, rotate float64) {
 	line.interval -= line.rate
 
 	line.Add(line.angle)
-	line.shape.Buffer(line.offset)
+	line.Buffer(line.offset)
 }
 
 func (line *Line) Add(angle float64) {
 	turning := line.turning || line.angle != angle
 	if turning {
 		line.angle = angle
-		line.lastTurn = line.position
-
 		sin, cos := math.Sin(angle), math.Cos(line.angle)
 		line.direction = mgl.Vec3{float32(cos - sin), 0, float32(sin + cos)}
 	}
@@ -79,33 +74,101 @@ func (line *Line) Add(angle float64) {
 	// Normalize and reset height
 	unit := line.direction
 	l := line.step / unit.Len()
-	unit = mgl.Vec3{unit[0] * l, line.height, unit[2] * l}
+	unit = mgl.Vec3{unit[0] * l, 0.0, unit[2] * l}
+	line.position = line.position.Add(unit)
 
-	p1 := line.lastTurn
-	p2 := line.position.Add(unit)
-	p3 := mgl.Vec3{p2[0], 0, p2[2]} // Discard height
-	quad := Quad(p1, p2)
-
-	pn := p1.Sub(p2).Cross(p3.Sub(p2)).Normalize()
-	normal := pn[:]
-
-	line.position = p3
-	shape := line.shape
-
-	if !turning && len(shape.vertices) >= len(quad) {
+	if !turning && len(line.segments) > 1 {
 		// Replace
-		shape.vertices = append(shape.vertices[:len(shape.vertices)-len(quad)], quad...)
+		line.segments[len(line.segments)-1] = line.position
 	} else {
-		line.offset = len(shape.vertices) / vertexDim
-		shape.vertices = append(shape.vertices, quad...)
+		line.offset = len(line.segments) - 1
+		line.segments = append(line.segments, line.position)
 	}
-	// TODO: Optimize by using indices
-	shape.normals = append(shape.normals, normal...)
-	shape.normals = append(shape.normals, normal...)
-	shape.normals = append(shape.normals, normal...)
-	shape.normals = append(shape.normals, normal...)
-	shape.normals = append(shape.normals, normal...)
-	shape.normals = append(shape.normals, normal...)
 
 	line.turning = false
+}
+
+// Shape interface:
+
+func (shape *Line) Len() int {
+	return len(shape.segments) * lineEmittedVertices
+}
+
+func (shape *Line) Stride() int {
+	return vecSize * vertexDim
+}
+
+func (shape *Line) Close() error {
+	gl.DeleteBuffer(shape.VBO)
+	return nil
+}
+
+const lineEmittedVertices = 6
+
+func (shape *Line) BytesOffset(n int) []byte {
+	numSegments := len(shape.segments)
+	if numSegments < 2 || numSegments < n {
+		return []byte{}
+	}
+
+	quad := [18]float32{}
+	buf := bytes.Buffer{}
+
+	var a, b mgl.Vec3
+	var bot, top float32 = 0.0, shape.height
+
+	for i := n + 1; i < numSegments; i++ {
+		a = shape.segments[i-1]
+		b = shape.segments[i]
+
+		// TODO: Emit gl.TRIANGLE_STRIP format?
+		quad = [18]float32{
+			b[0], top, b[2], // Top Right
+			a[0], top, a[2], // Top Left
+			a[0], bot, a[2], // Bottom Left
+			a[0], bot, a[2], // Bottom Left
+			b[0], top, b[2], // Top Right
+			b[0], bot, b[2], // Bottom Right
+		}
+		binary.Write(&buf, binary.LittleEndian, quad)
+	}
+	return buf.Bytes()
+}
+
+func (shape *Line) Buffer(offset int) {
+	data := shape.BytesOffset(offset)
+	//log.Println("Buffer offset=", offset, "vertices=", shape.Len(), "data=", len(data))
+	if len(data) == 0 {
+		return
+	}
+	gl.BindBuffer(gl.ARRAY_BUFFER, shape.VBO)
+	gl.BufferSubData(gl.ARRAY_BUFFER, lineEmittedVertices*offset*shape.Stride(), data)
+}
+
+func (shape *Line) Draw(camera Camera) {
+	shader := shape.shader
+	gl.Uniform1f(shader.Uniform("lights[0].intensity"), 2.0)
+	gl.Uniform3fv(shader.Uniform("lights[0].position"), shape.position[:])
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, shape.VBO)
+	stride := shape.Stride()
+
+	gl.EnableVertexAttribArray(shader.Attrib("vertCoord"))
+	gl.VertexAttribPointer(shader.Attrib("vertCoord"), vertexDim, gl.FLOAT, false, stride, 0)
+
+	gl.DrawArrays(gl.TRIANGLES, 0, shape.Len())
+}
+
+// Node interface:
+
+func (node *Line) UseShader(parent Shader) (Shader, bool) {
+	if parent == node.shader {
+		return parent, false
+	}
+	node.shader.Use()
+	return node.shader, true
+}
+
+func (node *Line) Transform(parent *mgl.Mat4) mgl.Mat4 {
+	return MultiMul(parent)
 }

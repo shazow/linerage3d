@@ -60,8 +60,7 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 
 	// Make line
 	line := NewLine(shaders.Get("line"), 6*4*10000)
-	line.Add(0)
-	line.shape.Buffer(0)
+	line.Buffer(0)
 	scene.Add(line)
 
 	// Make particle emitter
