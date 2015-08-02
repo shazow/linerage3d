@@ -5,7 +5,6 @@ import (
 	"time"
 
 	mgl "github.com/go-gl/mathgl/mgl32"
-	"golang.org/x/mobile/gl"
 )
 
 // TODO: Load into here
@@ -87,20 +86,7 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 		scene.Add(NewFloor(shaders.Get("line"), line))
 	*/
 
-	loadUniforms := func() {
-		// Add shader material
-		shader := shaders.Get("line")
-		shader.Use()
-		gl.Uniform3fv(shader.Uniform("material.ambient"), []float32{0.1, 0.15, 0.4})
-		gl.Uniform3fv(shader.Uniform("material.diffuse"), []float32{0.8, 0.6, 0.6})
-		gl.Uniform3fv(shader.Uniform("material.specular"), []float32{1.0, 1.0, 1.0})
-		//gl.Uniform1f(shader.Uniform("material.shininess"), 16.0)
-		gl.Uniform1f(shader.Uniform("material.refraction"), 1.0/1.52)
-
-		gl.Uniform3fv(shader.Uniform("lights[0].color"), []float32{0.4, 0.2, 0.1})
-		gl.Uniform1f(shader.Uniform("lights[0].intensity"), 0.0)
-	}
-	loadUniforms()
+	scene.Add(NewArena(shaders.Get("line")))
 
 	bindings.On(KeyReload, func(_ KeyBinding) {
 		log.Println("Reloading shaders.")
@@ -108,7 +94,6 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 		if err != nil {
 			log.Println("Shader reload error:", err)
 		}
-		loadUniforms()
 	})
 
 	return &linerageWorld{

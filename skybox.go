@@ -62,13 +62,16 @@ func (shape *Skybox) Transform(parent *mgl.Mat4) mgl.Mat4 {
 	return mgl.Ident4()
 }
 
-func (shape *Skybox) UseShader(parent Shader) (Shader, bool) {
-	return shape.shader, false
+func (node *Skybox) UseShader(parent Shader) (Shader, bool) {
+	if parent == node.shader {
+		return parent, false
+	}
+	node.shader.Use()
+	return node.shader, true
 }
 
 func (shape *Skybox) Draw(camera Camera) {
 	shader := shape.shader
-	shader.Use()
 
 	gl.DepthFunc(gl.LEQUAL)
 	gl.DepthMask(false)
@@ -125,7 +128,7 @@ func (scene *Floor) Draw(camera Camera) {
 	gl.Clear(gl.STENCIL_BUFFER_BIT)
 
 	// Draw floor
-	gl.Uniform4fv(shader.Uniform("surfaceColor"), []float32{0, 0, 0, 0.3})
+	gl.Uniform3fv(shader.Uniform("material.ambient"), []float32{0.1, 0.1, 0.1})
 	scene.Shape.Draw(shader, camera)
 
 	// Draw reflections
@@ -134,7 +137,7 @@ func (scene *Floor) Draw(camera Camera) {
 	gl.DepthMask(true)
 
 	view := camera.View()
-	gl.Uniform4fv(shader.Uniform("surfaceColor"), []float32{0.2, 0.2, 0.2, 1})
+	gl.Uniform3fv(shader.Uniform("material.ambient"), []float32{0.3, 0.3, 0.3})
 	for _, node := range scene.reflected {
 		model := node.Transform(scene.transform)
 		gl.UniformMatrix4fv(shader.Uniform("model"), model[:])
@@ -146,7 +149,6 @@ func (scene *Floor) Draw(camera Camera) {
 	}
 
 	gl.Disable(gl.STENCIL_TEST)
-	gl.Uniform4fv(shader.Uniform("surfaceColor"), []float32{0, 0, 0, 0})
 }
 
 func NewFloor(shader Shader, reflected ...Drawable) Drawable {

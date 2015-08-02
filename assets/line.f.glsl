@@ -1,6 +1,6 @@
 #version 100
 
-precision mediump float;
+precision highp float;
 
 uniform vec3 cameraCoord;
 uniform samplerCube tex;
