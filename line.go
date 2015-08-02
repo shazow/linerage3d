@@ -81,7 +81,7 @@ func (line *Line) Add(angle float64) {
 		// Replace
 		line.segments[len(line.segments)-1] = line.position
 	} else {
-		line.offset = len(line.segments) - 1
+		line.offset = len(line.segments)
 		line.segments = append(line.segments, line.position)
 	}
 
@@ -103,32 +103,21 @@ func (shape *Line) Close() error {
 	return nil
 }
 
-const lineEmittedVertices = 6
+const lineEmittedVertices = 2
 
 func (shape *Line) BytesOffset(n int) []byte {
-	numSegments := len(shape.segments)
-	if numSegments < 2 || numSegments < n {
-		return []byte{}
-	}
-
-	quad := [18]float32{}
+	quad := [6]float32{}
 	buf := bytes.Buffer{}
 
-	var a, b mgl.Vec3
+	var s mgl.Vec3
 	var bot, top float32 = 0.0, shape.height
 
-	for i := n + 1; i < numSegments; i++ {
-		a = shape.segments[i-1]
-		b = shape.segments[i]
+	for i := n; i < len(shape.segments); i++ {
+		s = shape.segments[i]
 
-		// TODO: Emit gl.TRIANGLE_STRIP format?
-		quad = [18]float32{
-			b[0], top, b[2], // Top Right
-			a[0], top, a[2], // Top Left
-			a[0], bot, a[2], // Bottom Left
-			a[0], bot, a[2], // Bottom Left
-			b[0], top, b[2], // Top Right
-			b[0], bot, b[2], // Bottom Right
+		quad = [6]float32{
+			s[0], bot, s[2], // Bottom Right
+			s[0], top, s[2], // Top Right
 		}
 		binary.Write(&buf, binary.LittleEndian, quad)
 	}
@@ -137,7 +126,6 @@ func (shape *Line) BytesOffset(n int) []byte {
 
 func (shape *Line) Buffer(offset int) {
 	data := shape.BytesOffset(offset)
-	//log.Println("Buffer offset=", offset, "vertices=", shape.Len(), "data=", len(data))
 	if len(data) == 0 {
 		return
 	}
@@ -156,7 +144,7 @@ func (shape *Line) Draw(camera Camera) {
 	gl.EnableVertexAttribArray(shader.Attrib("vertCoord"))
 	gl.VertexAttribPointer(shader.Attrib("vertCoord"), vertexDim, gl.FLOAT, false, stride, 0)
 
-	gl.DrawArrays(gl.TRIANGLES, 0, shape.Len())
+	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, shape.Len())
 }
 
 // Node interface:
