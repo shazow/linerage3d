@@ -104,6 +104,7 @@ func TestEncodeObjects(t *testing.T) {
 }
 
 func TestQuad(t *testing.T) {
+	t.SkipNow()
 	q := Quad(mgl.Vec3{0, 0, 0}, mgl.Vec3{1, 1, 0})
 	fmt.Println(q)
 
@@ -199,4 +200,44 @@ var cubeIndex = []int{
 	4, 5, 7, 7, 6, 4,
 	0, 3, 7, 7, 5, 0,
 	1, 4, 2, 2, 4, 6,
+}
+
+func TestBoxCollision(t *testing.T) {
+	tests := []struct {
+		result bool
+
+		a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32
+	}{
+		{true, 0, 0, 1, 1, 0, 0, 1, 1},
+		{true, 0, 0, 1, 1, 1, 1, 0, 0},
+		{true, 0, 0, 1, 1, 1, 0, 0, 1},
+		{false, 0, 0, 1, 1, 2, 2, 3, 3},
+	}
+
+	for i, test := range tests {
+		r := IsBoxCollision(test.a1_x, test.a1_y, test.a2_x, test.a2_y, test.b1_x, test.b1_y, test.b2_x, test.b2_y)
+		if r != test.result {
+			t.Errorf("IsBoxCollision test #%d failed: %v", i, test)
+		}
+	}
+}
+
+func TestIsCollision(t *testing.T) {
+	tests := []struct {
+		result bool
+
+		a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32
+	}{
+		{true, 0, 0, 1, 1, 0, 0, 1, 1},
+		{true, 0, 0, 1, 1, 1, 1, 0, 0},
+		{true, 0, 0, 1, 1, 1, 0, 0, 1},
+		{false, 0, 0, 1, 1, 2, 2, 3, 3},
+	}
+
+	for i, test := range tests {
+		r := IsCollision2D(test.a1_x, test.a1_y, test.a2_x, test.a2_y, test.b1_x, test.b1_y, test.b2_x, test.b2_y)
+		if r != test.result {
+			t.Errorf("IsCollision2D test #%d failed: %v", i, test)
+		}
+	}
 }

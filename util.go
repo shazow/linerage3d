@@ -318,3 +318,53 @@ func Upvote(tip mgl.Vec3, size float32) []float32 {
 		b[0], a[1], b[2], // Bottom Right
 	}
 }
+
+// IsBoundingBox returns true if a box intercepts b box.
+func IsBoxCollision(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32) bool {
+	return a1_x <= b2_x && a2_x >= b1_x && a1_y <= b2_y && a2_y >= b1_y
+}
+
+// IsCollision returns true if segment a1->a2 intersects segment b1->b2.
+func IsCollision2D(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32) bool {
+	/*
+		if !IsBoxCollision(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y) {
+			// Short circuit check
+			return false
+		}
+	*/
+
+	// Based on http://stackoverflow.com/a/1968345/187878
+	s1_x := a2_x - a1_x
+	s1_y := a2_y - a1_y
+	s2_x := b2_x - b1_x
+	s2_y := b2_y - b1_y
+
+	denom := s1_x*s2_y - s2_x*s1_y
+	if denom == 0 {
+		// Collinear
+		return a1_x == b1_x || a1_x == b2_x
+	}
+	denomPositive := denom > 0
+
+	s3_x := a1_x - b1_x
+	s3_y := a1_y - b1_y
+
+	s_numer := s1_x*s3_y - s1_y*s3_x
+	if (s_numer < 0) == denomPositive {
+		return false
+	}
+
+	t_numer := s2_x*s3_y - s2_y*s3_x
+	if (t_numer < 0) == denomPositive {
+		return false
+	}
+
+	if ((s_numer > denom) == denomPositive) || ((t_numer > denom) == denomPositive) {
+		return false
+	}
+
+	// Do we want the intersecting point?
+	// i_x = a1_x + (t * s1_x)
+	// i_y = a1_x + (t * s1_y)
+	return true
+}
