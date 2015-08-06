@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"log"
 	"time"
 
@@ -86,7 +87,7 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 		scene.Add(NewFloor(shaders.Get("line"), line))
 	*/
 
-	scene.Add(NewArena(shaders.Get("line")))
+	scene.Add(NewArenaNode(image.Rect(-10, 10, -10, 10), shaders.Get("line")))
 
 	bindings.On(KeyReload, func(_ KeyBinding) {
 		log.Println("Reloading shaders.")

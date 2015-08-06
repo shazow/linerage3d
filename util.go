@@ -333,7 +333,8 @@ func IsCollision2D(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32) bool 
 		}
 	*/
 
-	// Based on http://stackoverflow.com/a/1968345/187878
+	// Based on https://stackoverflow.com/questions/563198/
+
 	s1_x := a2_x - a1_x
 	s1_y := a2_y - a1_y
 	s2_x := b2_x - b1_x
