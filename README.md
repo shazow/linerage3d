@@ -9,4 +9,5 @@ into a coherent library and game code.
 
 ## Notes
 
-- https://github.com/luxengine/glm
+- https://github.com/luxengine/glm for memory-optimized mgl types
+- https://github.com/jagenjo/rendeer.js for scene components

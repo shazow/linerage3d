@@ -34,8 +34,10 @@ type linerageWorld struct {
 	scene    Scene
 	bindings *Bindings
 
-	line    *Line
-	emitter Emitter
+	collisionToken *cellSegment
+	arena          *arena
+	line           *Line
+	emitter        Emitter
 }
 
 func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, error) {
@@ -87,7 +89,8 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 		scene.Add(NewFloor(shaders.Get("line"), line))
 	*/
 
-	scene.Add(NewArenaNode(image.Rect(-10, 10, -10, 10), shaders.Get("line")))
+	arena := NewArenaNode(image.Rect(-10, -10, 10, 10), shaders.Get("line"))
+	scene.Add(arena)
 
 	bindings.On(KeyReload, func(_ KeyBinding) {
 		log.Println("Reloading shaders.")
@@ -101,6 +104,7 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 		scene:    scene,
 		bindings: bindings,
 
+		arena:   arena,
 		line:    line,
 		emitter: emitter,
 	}, err
@@ -127,4 +131,11 @@ func (world *linerageWorld) Tick(interval time.Duration) {
 	world.line.Tick(interval, lineRotate)
 	world.emitter.MoveTo(world.line.position)
 	world.emitter.Tick(interval)
+
+	var err error
+	world.collisionToken, err = world.arena.Add(world.collisionToken, world.line.segments)
+	if err != nil {
+		log.Println(err)
+	}
+
 }

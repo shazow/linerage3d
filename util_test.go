@@ -233,6 +233,7 @@ func TestIsCollision(t *testing.T) {
 		{true, 0, 0, 1, 1, 1, 0, 0, 1},
 		{true, 3, 1, 3, 2, 2.5, 1.5, 3.5, 1.5},
 		{false, 0, 0, 1, 1, 2, 2, 3, 3},
+		{false, 1.37, 1.39, 1.34, 1.35, 1.31, 1.31, 1.34, 1.35},
 	}
 
 	for i, test := range tests {

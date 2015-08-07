@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"image"
+	"log"
 
 	mgl "github.com/go-gl/mathgl/mgl32"
 	"golang.org/x/mobile/gl"
@@ -50,26 +51,62 @@ type arena struct {
 }
 
 func (grid *arena) index(x, y float32) int {
-	return int(x) + int(y)*grid.width
+	return int(x-grid.bounds.X1) + int(y-grid.bounds.Y1)*grid.width
 }
 
-func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) *cellSegment {
-	if len(segment) < 1 {
-		return nil
+var ErrBadSegment = errors.New("insufficient segment length")
+var CollisionBoundary = errors.New("collision with boundary")
+var CollisionSegment = errors.New("collision with segment")
+
+func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error) {
+	if len(segment) < 2 {
+		return nil, ErrBadSegment
 	}
 
 	offset := len(segment) - 1
 
 	var vec mgl.Vec3 = segment[offset]
-	x, y := vec[0], vec[2]
+	x1, y1 := vec[0], vec[2]
 
-	idx := grid.index(x, y)
+	// Check boundary
+	if grid.bounds.X1 >= x1 || x1 >= grid.bounds.X2 ||
+		grid.bounds.Y1 >= y1 || y1 >= grid.bounds.Y2 {
+		return nil, CollisionBoundary
+	}
+
+	idx := grid.index(x1, y1)
+	cell := &grid.grid[idx]
+
+	// Check segment collision
+	vec = segment[offset-1]
+	x0, y0 := vec[0], vec[2]
+
+	// Check cell segments
+	for _, cellSegment := range *cell {
+		n := len(cellSegment.segment)
+		if cellSegment.cellIdx == idx && n > 0 {
+			// Same segment, skip comparing the last element
+			n -= 1
+		}
+		for i := 1; i < n; i += 2 {
+			vec = cellSegment.segment[i-1]
+			seg_x0, seg_y0 := vec[0], vec[2]
+
+			vec = cellSegment.segment[i]
+			seg_x1, seg_y1 := vec[0], vec[2]
+
+			if IsCollision2D(x0, y0, x1, y1, seg_x0, seg_y0, seg_x1, seg_y1) {
+				log.Printf("Collision: %v against %v", []float32{x0, y0, x1, y1}, []float32{seg_x0, seg_y0, seg_x1, seg_y1})
+				return nil, CollisionSegment
+			}
+		}
+	}
+
 	if cs == nil || cs.cellIdx != idx {
 		if cs != nil {
 			// Append final piece to the original cellSegment
 			cs.segment = segment[cs.offset:]
 		}
-		cell := &grid.grid[idx]
 		*cell = append(*cell, cellSegment{
 			cellIdx:    idx,
 			segmentIdx: len(*cell),
@@ -78,7 +115,7 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) *cellSegment {
 		cs = &grid.grid[idx][len(*cell)-1]
 	}
 	cs.segment = segment[cs.offset:]
-	return cs
+	return cs, nil
 }
 
 func (grid *arena) IsCollision(segment []mgl.Vec3) bool {
@@ -99,7 +136,6 @@ func (grid *arena) IsCollision(segment []mgl.Vec3) bool {
 
 	// TODO: Check cellSegments of the other idx?
 	for _, cellSegment := range grid.grid[idx] {
-		fmt.Printf("Checking %v against %d segments\n", segment[len(segment)-2:], len(cellSegment.segment))
 		for i := 1; i < len(cellSegment.segment); i += 2 {
 			vec = cellSegment.segment[i-1]
 			b1_x, b1_y := vec[0], vec[2]
@@ -107,8 +143,8 @@ func (grid *arena) IsCollision(segment []mgl.Vec3) bool {
 			vec = cellSegment.segment[i]
 			b2_x, b2_y := vec[0], vec[2]
 
-			fmt.Printf("Checking %v against %v\n", segment[len(segment)-2:], cellSegment.segment[i-1:i+1])
 			if IsCollision2D(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y) {
+				log.Printf("Collision: %v", []float32{a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y})
 				return true
 			}
 		}
