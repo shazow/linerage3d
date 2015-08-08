@@ -325,6 +325,7 @@ func IsBoxCollision(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32) bool
 }
 
 // IsCollision returns true if segment a1->a2 intersects segment b1->b2.
+// Overlaps are not considered collisions.
 func IsCollision2D(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32) bool {
 	/*
 		if !IsBoxCollision(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y) {
@@ -343,7 +344,7 @@ func IsCollision2D(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32) bool 
 	denom := s1_x*s2_y - s2_x*s1_y
 	if denom == 0 {
 		// Collinear
-		return a1_x == b1_x || a1_x == b2_x
+		return false
 	}
 	denomPositive := denom > 0
 
