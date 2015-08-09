@@ -79,7 +79,7 @@ func TestArena(t *testing.T) {
 
 	var cs *cellSegment
 	var err error
-	for i := 2; i < len(segments); i++ {
+	for i := 2; i <= len(segments); i++ {
 		t.Logf("Adding %v", segments[i-2:i])
 		cs, err = arena.Add(cs, segments[:i])
 		if err != nil {
@@ -89,6 +89,7 @@ func TestArena(t *testing.T) {
 
 	// Add collision segment
 	segments = append(segments, mgl.Vec3{3.5, 0, 1.5})
+	t.Logf("Adding %v", segments[len(segments)-2:])
 	if cs, err = arena.Add(cs, segments); err == nil {
 		t.Errorf("Missed collision for segment: %v", segments[len(segments)-2:])
 		t.Log(dumpArena(arena))
@@ -96,18 +97,21 @@ func TestArena(t *testing.T) {
 
 	// Add collision segment
 	segments = append(segments, mgl.Vec3{2, 0, 1})
+	t.Logf("Adding %v", segments[len(segments)-2:])
 	if cs, err = arena.Add(cs, segments); err == nil {
 		t.Errorf("Missed collision for segment: %v", segments[len(segments)-2:])
 	}
 
 	// Add non-collision segment
 	segments = append(segments, mgl.Vec3{2.5, 0, 1})
+	t.Logf("Adding %v", segments[len(segments)-2:])
 	if cs, err = arena.Add(cs, segments); err != nil {
-		t.Errorf("Collision for segment: %v", segments[len(segments)-2:])
+		t.Errorf("Collision for segment: %v", err)
 	}
 
 	// Add collision segment
 	segments = append(segments, mgl.Vec3{4, 0, 1})
+	t.Logf("Adding %v", segments[len(segments)-2:])
 	if cs, err = arena.Add(cs, segments); err == nil {
 		t.Errorf("Missed collision for segment: %v", segments[len(segments)-2:])
 	}

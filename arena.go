@@ -2,11 +2,23 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"image"
 
 	mgl "github.com/go-gl/mathgl/mgl32"
 	"golang.org/x/mobile/gl"
 )
+
+var ErrBadSegment = errors.New("insufficient segment length")
+var CollisionBoundary = errors.New("collision with boundary")
+
+type CollisionSegment struct {
+	x0, y0, x1, y1 float32
+}
+
+func (seg *CollisionSegment) Error() string {
+	return fmt.Sprintf("collision with segment: %v,%v -> %v,%v", seg.x0, seg.y0, seg.x1, seg.y1)
+}
 
 func NewArenaNode(bounds image.Rectangle, shader Shader) *arena {
 	shape := NewStaticShape()
@@ -52,7 +64,7 @@ func (cell *gridCell) Len() int {
 	return n
 }
 
-func (cell *gridCell) IsCollision(x0, y0, x1, y1 float32) bool {
+func (cell *gridCell) IsCollision(x0, y0, x1, y1 float32) error {
 	var vec mgl.Vec3
 	for _, cellSegment := range *cell {
 		for i := 1; i < len(cellSegment.segment); i += 1 {
@@ -62,12 +74,12 @@ func (cell *gridCell) IsCollision(x0, y0, x1, y1 float32) bool {
 			vec = cellSegment.segment[i]
 			seg_x1, seg_y1 := vec[0], vec[2]
 
-			if IsCollision2D(x0, y0, x1, y1, seg_x0, seg_y0, seg_x1, seg_y1) {
-				return true
+			if IsCollision2D(seg_x0, seg_y0, seg_x1, seg_y1, x0, y0, x1, y1) {
+				return &CollisionSegment{seg_x0, seg_y0, seg_x1, seg_y1}
 			}
 		}
 	}
-	return false
+	return nil
 }
 
 type arena struct {
@@ -82,10 +94,6 @@ type arena struct {
 func (grid *arena) index(x, y float32) int {
 	return int(x-grid.bounds.X1) + int(y-grid.bounds.Y1)*grid.width
 }
-
-var ErrBadSegment = errors.New("insufficient segment length")
-var CollisionBoundary = errors.New("collision with boundary")
-var CollisionSegment = errors.New("collision with segment")
 
 func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error) {
 	if len(segment) < 2 {
@@ -107,6 +115,7 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 	vec = segment[offset-1]
 	x0, y0 := vec[0], vec[2]
 
+	// TODO: Range over full length, not just start/end
 	checkIdx := []int{grid.index(x0, y0), grid.index(x1, y1)}
 
 	if checkIdx[0] == checkIdx[1] {
@@ -116,8 +125,8 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 	// Check cell segments
 	var err error
 	for _, idx := range checkIdx {
-		if grid.grid[idx].IsCollision(x0, y0, x1, y1) {
-			err = CollisionSegment
+		err = grid.grid[idx].IsCollision(x0, y0, x1, y1)
+		if err != nil {
 			break
 		}
 	}
