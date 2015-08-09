@@ -328,15 +328,7 @@ func IsBoxCollision(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32) bool
 // Collisions are checked [a,b). That is, a->b->c will not collide, but
 // a->b,a->c will collide.
 func IsCollision2D(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32) bool {
-	/*
-		if !IsBoxCollision(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y) {
-			// Short circuit check
-			return false
-		}
-	*/
-
-	// Based on https://stackoverflow.com/questions/563198/
-
+	// Partly based on https://stackoverflow.com/questions/563198/
 	s1_x := a2_x - a1_x
 	s1_y := a2_y - a1_y
 	s2_x := b2_x - b1_x
