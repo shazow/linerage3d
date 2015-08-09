@@ -250,6 +250,9 @@ func TestIsCollision(t *testing.T) {
 
 		{true, 3, 1, 3, 2, 2.5, 1.5, 3.5, 1.5},
 		{true, 3, 1, 3, 2, 2.5, 1.5, 3.5, 1},
+		{true, 3, 1, 3, 2, 2.5, 1, 4, 1},
+		{true, 1, 1, 1, 3, 0, 1, 4, 1},
+		{true, 1, 0, 1, 1, 0, 1, 4, 1},
 		{false, 0, 0, 1, 1, 2, 2, 3, 3},
 		{false, 2, 0, 3, 0, 3, 0, 3, 1},
 		{false, 2, 1, 3, 1, 1, 0, 2, 0}, // collinear disjoint vertically

@@ -12,8 +12,6 @@ import (
 
 func TestArenaSegments(t *testing.T) {
 	arena := newArena(image.Rect(-10, -10, 10, 10), nil)
-	_ = arena
-
 	segments := []mgl.Vec3{
 		mgl.Vec3{3, 0, 1},
 		mgl.Vec3{3, 0, 2},
@@ -42,6 +40,42 @@ func TestArenaSegments(t *testing.T) {
 	if cs, err = arena.Add(cs, segments[:offset]); err == nil {
 		t.Errorf("Missed collision for segment: %v", segments[offset-2:offset])
 		t.Log(dumpArena(arena))
+	}
+}
+
+func TestArenaExtend(t *testing.T) {
+	arena := newArena(image.Rect(-10, -10, 10, 10), nil)
+	segments := []mgl.Vec3{
+		mgl.Vec3{3, 0, 1},
+		mgl.Vec3{3, 0, 2},
+		mgl.Vec3{3, 0, 3},
+	}
+
+	offset := 2
+	var cs *cellSegment
+	var err error
+
+	if cs, err = arena.Add(cs, segments[:offset]); err != nil {
+		t.Errorf("Unexpected collision for segment: %v", err)
+	}
+
+	if cs, err = arena.Add(cs, segments); err != nil {
+		t.Errorf("Unexpected collision for segment: %v", err)
+	}
+
+	segments[len(segments)-1][2] = 5
+	if cs, err = arena.Add(cs, segments); err != nil {
+		t.Errorf("Unexpected collision for segment: %v", err)
+	}
+
+	segments[len(segments)-1][2] = 9
+	if cs, err = arena.Add(cs, segments); err != nil {
+		t.Errorf("Unexpected collision for segment: %v", err)
+	}
+
+	segments[len(segments)-1][2] = 10
+	if cs, err = arena.Add(cs, segments); err == nil {
+		t.Errorf("Missed collision with boundary.")
 	}
 }
 

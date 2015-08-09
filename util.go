@@ -364,16 +364,16 @@ func IsCollision2D(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32) bool 
 	s3_y := a1_y - b1_y
 
 	s_numer := s1_x*s3_y - s1_y*s3_x
-	if (s_numer < 0) == denomPositive {
+	if (s_numer <= 0) == denomPositive {
 		return false
 	}
 
 	t_numer := s2_x*s3_y - s2_y*s3_x
-	if (t_numer < 0) == denomPositive {
+	if (t_numer <= 0) == denomPositive {
 		return false
 	}
 
-	if ((s_numer > denom) == denomPositive) || ((t_numer > denom) == denomPositive) {
+	if ((s_numer >= denom) == denomPositive) || ((t_numer >= denom) == denomPositive) {
 		return false
 	}
 
@@ -383,6 +383,8 @@ func IsCollision2D(a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y float32) bool 
 		i_x := a1_x + (t * s1_x)
 		i_y := a1_x + (t * s1_y)
 		fmt.Printf("collided at %v,%v when comparing %v\n", i_x, i_y, []float32{a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y})
+
+		fmt.Println(s_numer, t_numer, denom, "numer", a1_x, a1_y, a2_x, a2_y, b1_x, b1_y, b2_x, b2_y)
 	*/
 	return true
 }

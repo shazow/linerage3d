@@ -106,8 +106,8 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 	x1, y1 := vec[0], vec[2]
 
 	// Check boundary
-	if grid.bounds.X1 > x1 || x1 > grid.bounds.X2 ||
-		grid.bounds.Y1 > y1 || y1 > grid.bounds.Y2 {
+	if grid.bounds.X1 >= x1 || x1 >= grid.bounds.X2 ||
+		grid.bounds.Y1 >= y1 || y1 >= grid.bounds.Y2 {
 		return nil, CollisionBoundary
 	}
 
@@ -115,23 +115,40 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 	vec = segment[offset-1]
 	x0, y0 := vec[0], vec[2]
 
-	// TODO: Range over full length, not just start/end
-	checkIdx := []int{grid.index(x0, y0), grid.index(x1, y1)}
-
-	if checkIdx[0] == checkIdx[1] {
-		checkIdx = checkIdx[:1]
+	dx, dy := x1-x0, y1-y0
+	steps := (dx*dx + dy*dy)
+	if steps > 1.0 {
+		dx, dy = dx/steps, dy/steps
 	}
+
+	// Extending only works if the extension is collinearly forward. All hell
+	// will break loose otherwise.
+	extending := cs != nil && cs.offset == offset-1
 
 	// Check cell segments
+	var lastIdx int = -1
 	var err error
-	for _, idx := range checkIdx {
-		err = grid.grid[idx].IsCollision(x0, y0, x1, y1)
-		if err != nil {
-			break
+	for ; steps >= 0; steps -= 1.0 {
+		idx := grid.index(x1-dx*steps, y1-dy*steps)
+		if idx == lastIdx {
+			// FIXME: This shouldn't happen, but it does.
+			// FIXME: Rounding errors with steps?
+			continue
 		}
-	}
+		lastIdx = idx
 
-	for _, idx := range checkIdx {
+		if extending {
+			// Skip until we reach the last cell we filled last
+			if cs.cellIdx == idx {
+				extending = false
+			}
+			continue
+		}
+
+		if err == nil {
+			err = grid.grid[idx].IsCollision(x0, y0, x1, y1)
+		}
+
 		cell := &grid.grid[idx]
 		if cs == nil || cs.cellIdx != idx {
 			*cell = append(*cell, cellSegment{
