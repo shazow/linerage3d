@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"reflect"
@@ -112,6 +111,35 @@ func TestArenaExtend(t *testing.T) {
 	}
 }
 
+func TestArenaFail(t *testing.T) {
+	arena := newArena(image.Rect(-10, -10, 10, 10), nil)
+	segments := []mgl.Vec3{
+		mgl.Vec3{0, 0, 0},
+		mgl.Vec3{1, 0, 2},
+		mgl.Vec3{0, 0, 3},
+		mgl.Vec3{-1, 0, 2},
+		mgl.Vec3{0, 0, 1},
+	}
+
+	var cs *cellSegment
+	var err error
+	for i := 2; i <= len(segments); i++ {
+		t.Logf("Adding %v", segments[i-2:i])
+		cs, err = arena.Add(cs, segments[:i])
+		if err != nil {
+			t.Errorf("Arena collision on segment %v: %s", segments[i-2:i], err)
+		}
+	}
+
+	// Extend
+	segments[len(segments)-1] = mgl.Vec3{0.4, 0, 0.6}
+	if cs, err = arena.Add(cs, segments); err == nil {
+		t.Errorf("Missed collision for segment: %v", segments[len(segments)-2:])
+	}
+
+	fmt.Println(dumpArena(arena))
+}
+
 func TestArena(t *testing.T) {
 	arena := newArena(image.Rect(-10, -10, 10, 10), nil)
 
@@ -182,22 +210,4 @@ func TestArena(t *testing.T) {
 	if cs, err = arena.Add(cs, segments); err == nil {
 		t.Errorf("Missed collision for segment: %v", segments[len(segments)-2:])
 	}
-}
-
-func dumpArena(arena *arena) string {
-	w := &bytes.Buffer{}
-	fmt.Fprintf(w, "arena.bounds: %+v\n", arena.bounds)
-	fmt.Fprintf(w, "arena.grid:\n")
-
-	for idx, cell := range arena.grid {
-		if len(cell) == 0 {
-			continue
-		}
-
-		x := idx%arena.width + int(arena.bounds.X1)
-		y := (idx-x)/arena.height + int(arena.bounds.Y1)
-
-		fmt.Fprintf(w, "[%d,%d] %+v\n", x, y, cell)
-	}
-	return w.String()
 }

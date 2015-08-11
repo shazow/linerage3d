@@ -100,6 +100,11 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 		}
 	})
 
+	bindings.On(KeyDebug, func(_ KeyBinding) {
+		log.Println("Segment: ", line.segments)
+		log.Println(dumpArena(arena))
+	})
+
 	return &linerageWorld{
 		scene:    scene,
 		bindings: bindings,

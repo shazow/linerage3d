@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"image"
@@ -75,6 +76,10 @@ func (cell *gridCell) IsCollision(x0, y0, x1, y1 float32) error {
 			seg_x1, seg_y1 := vec[0], vec[2]
 
 			if IsCollision2D(seg_x0, seg_y0, seg_x1, seg_y1, x0, y0, x1, y1) {
+				if seg_x0 == x0 && seg_y0 == y0 && seg_x1 == x1 && seg_y1 == y1 {
+					// FIXME: Temporary hack to avoid checking the same segment
+					continue
+				}
 				return &CollisionSegment{seg_x0, seg_y0, seg_x1, seg_y1}
 			}
 		}
@@ -89,6 +94,9 @@ type arena struct {
 	width  int
 	height int
 	grid   []gridCell
+
+	// Debug
+	checked int
 }
 
 func (grid *arena) index(x, y float32) int {
@@ -126,7 +134,6 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 	extending := cs != nil && cs.offset == offset
 
 	// Check cell segments
-	checked := 0
 	var lastIdx int = -1
 	var err error
 	for ; steps >= 0; steps -= 1.0 {
@@ -141,12 +148,13 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 		}
 		lastIdx = idx
 
-		if extending {
+		if extending && false {
 			// Skip until we reach the last cell we filled last
 			if cs.cellIdx == idx {
 				extending = false
+			} else {
+				continue
 			}
-			continue
 		}
 
 		if cs != nil && cs.cellIdx == idx && len(cs.segment) == len(segment)-offset+1 {
@@ -156,7 +164,7 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 
 		if err == nil {
 			err = grid.grid[idx].IsCollision(x0, y0, x1, y1)
-			checked++
+			grid.checked++
 		}
 
 		cell := &grid.grid[idx]
@@ -191,4 +199,22 @@ var arenaVertices = []float32{
 	100, 0, 100,
 	-100, 0, -100,
 	-100, 0, 100,
+}
+
+func dumpArena(arena *arena) string {
+	w := &bytes.Buffer{}
+	fmt.Fprintf(w, "arena.bounds: %+v\n", arena.bounds)
+	fmt.Fprintf(w, "arena.grid:\n")
+
+	for idx, cell := range arena.grid {
+		if len(cell) == 0 {
+			continue
+		}
+
+		x := idx%arena.width + int(arena.bounds.X1)
+		y := (idx-x)/arena.height + int(arena.bounds.Y1)
+
+		fmt.Fprintf(w, "[%d,%d] %+v\n", x, y, cell)
+	}
+	return w.String()
 }
