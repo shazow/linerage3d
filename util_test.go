@@ -243,7 +243,7 @@ func TestIsCollision(t *testing.T) {
 		{false, 0, 1, 0, 4, 1, 2, 1, 3},     // a -> d, c -> b, parallel offset
 		{true, 1, 0, 2, 0, 3, 0, 2, 0},      // a -> b <- c
 
-		{false, 0, 1, 0, 4, 0, 1, 1, 3}, // a -> b, a->c, non-collinear
+		{true, 0, 1, 0, 4, 0, 1, 1, 3}, // a -> b, a->c, non-collinear
 		{true, 0, 1, 0, 4, 0, 1, 0, 3},
 		{false, 0, 1, 0, 4, 0, 4, 1, 3},
 		{true, 0, 1, 0, 4, 0, 4, 0, 3},
