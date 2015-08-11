@@ -37,25 +37,27 @@ type Line struct {
 	segments  []mgl.Vec3
 	height    float32
 
-	step    float64
-	angle   float64
-	turning bool
-	offset  int
+	step        float64
+	angle       float64
+	angleBuffer float64
+	offset      int
 }
 
 func (line *Line) Tick(interval time.Duration, rotate float64) {
 	step := float32(line.step * interval.Seconds())
 
-	line.Add(line.angle+rotate, step)
+	line.Add(line.angleBuffer+rotate, step)
 	line.Buffer(line.offset)
 
 }
 
 func (line *Line) Add(angle float64, step float32) {
-	turning := line.angle != angle
+	line.angleBuffer = angle
+	// Throttle turning (do we need this?)
+	turning := math.Abs(line.angleBuffer-line.angle) > 0.5
 	if turning {
-		line.angle = angle
-		sin, cos := math.Sin(angle), math.Cos(line.angle)
+		line.angle = line.angleBuffer
+		sin, cos := math.Sin(line.angle), math.Cos(line.angle)
 		line.direction = mgl.Vec3{float32(cos - sin), 0, float32(sin + cos)}
 	}
 

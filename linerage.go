@@ -135,7 +135,11 @@ func (world *linerageWorld) Tick(interval time.Duration) {
 	var err error
 	world.collisionToken, err = world.arena.Add(world.collisionToken, world.line.segments)
 	if err != nil {
-		log.Println(err)
+		n := len(world.line.segments) - 4
+		if n < 0 {
+			n = 0
+		}
+		log.Printf("Collision with %s\n\tLast segments: %v", err, world.line.segments[n:])
 	}
 
 }

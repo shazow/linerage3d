@@ -100,9 +100,9 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 		return nil, ErrBadSegment
 	}
 
-	offset := len(segment) - 1
+	offset := len(segment) - 2
 
-	var vec mgl.Vec3 = segment[offset]
+	var vec mgl.Vec3 = segment[offset+1]
 	x1, y1 := vec[0], vec[2]
 
 	// Check boundary
@@ -112,7 +112,7 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 	}
 
 	// Check segment collision
-	vec = segment[offset-1]
+	vec = segment[offset]
 	x0, y0 := vec[0], vec[2]
 
 	dx, dy := x1-x0, y1-y0
@@ -123,17 +123,21 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 
 	// Extending only works if the extension is collinearly forward. All hell
 	// will break loose otherwise.
-	extending := cs != nil && cs.offset == offset-1
+	extending := cs != nil && cs.offset == offset
 
 	// Check cell segments
+	checked := 0
 	var lastIdx int = -1
 	var err error
 	for ; steps >= 0; steps -= 1.0 {
 		idx := grid.index(x1-dx*steps, y1-dy*steps)
 		if idx == lastIdx {
-			// FIXME: This shouldn't happen, but it does.
-			// FIXME: Rounding errors with steps?
+			// FIXME: This is happening more than it should
 			continue
+		}
+		if idx > len(grid.grid) && err == nil {
+			err = CollisionBoundary
+			break
 		}
 		lastIdx = idx
 
@@ -145,8 +149,14 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 			continue
 		}
 
+		if cs != nil && cs.cellIdx == idx && len(cs.segment) == len(segment)-offset+1 {
+			// Already set
+			continue
+		}
+
 		if err == nil {
 			err = grid.grid[idx].IsCollision(x0, y0, x1, y1)
+			checked++
 		}
 
 		cell := &grid.grid[idx]
@@ -154,12 +164,13 @@ func (grid *arena) Add(cs *cellSegment, segment []mgl.Vec3) (*cellSegment, error
 			*cell = append(*cell, cellSegment{
 				cellIdx:    idx,
 				segmentIdx: len(*cell),
-				offset:     offset - 1,
+				offset:     offset,
 			})
 			cs = &grid.grid[idx][len(*cell)-1]
 		}
 		cs.segment = segment[cs.offset:]
 	}
+
 	return cs, err
 }
 

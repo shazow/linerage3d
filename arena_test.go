@@ -67,8 +67,41 @@ func TestArenaExtend(t *testing.T) {
 	if cs, err = arena.Add(cs, segments); err != nil {
 		t.Errorf("Unexpected collision for segment: %v", err)
 	}
+	oldIdx := cs.cellIdx
 
+	segments[len(segments)-1][2] = 7
+	if cs, err = arena.Add(cs, segments); err != nil {
+		t.Errorf("Unexpected collision for segment: %v", err)
+	}
+
+	if cs.cellIdx == oldIdx {
+		t.Errorf("Failed to update cell segment")
+	}
+
+	// Turn
+	segments = append(segments, mgl.Vec3{3.5, 0, 7})
+	if cs, err = arena.Add(cs, segments); err != nil {
+		t.Errorf("Unexpected collision for segment: %v", err)
+	}
+
+	// No-op
+	if cs, err = arena.Add(cs, segments); err != nil {
+		t.Errorf("Unexpected collision for segment: %v", err)
+	}
+
+	// Turn
+	segments = append(segments, mgl.Vec3{4.5, 0, 7.5})
+	if cs, err = arena.Add(cs, segments); err != nil {
+		t.Errorf("Unexpected collision for segment: %v", err)
+	}
+
+	// Extend
 	segments[len(segments)-1][2] = 9
+	if cs, err = arena.Add(cs, segments); err != nil {
+		t.Errorf("Unexpected collision for segment: %v", err)
+	}
+
+	// No-op
 	if cs, err = arena.Add(cs, segments); err != nil {
 		t.Errorf("Unexpected collision for segment: %v", err)
 	}
