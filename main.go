@@ -35,6 +35,7 @@ type Engine struct {
 	dragOrigin   geom.Point
 	dragging     bool
 	paused       bool
+	gameover     bool
 	following    bool
 	followOffset mgl.Vec3
 }
@@ -56,6 +57,11 @@ func (e *Engine) Start() {
 	e.bindings.On(KeyPause, func(_ KeyBinding) {
 		e.paused = !e.paused
 		log.Println("Paused:", e.paused)
+
+		if e.gameover {
+			e.gameover = false
+			e.world.Reset()
+		}
 	})
 	e.bindings.On(KeyCameraFollow, func(_ KeyBinding) {
 		e.following = !e.following
@@ -144,7 +150,11 @@ func (e *Engine) Draw(c config.Event) {
 	//gl.SampleCoverage(4.0, false)
 
 	if !e.paused {
-		e.world.Tick(interval)
+		err := e.world.Tick(interval)
+		if err != nil {
+			e.paused = true
+			e.gameover = true
+		}
 	}
 	e.scene.Draw(e.camera)
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"reflect"
 	"testing"
@@ -136,8 +135,6 @@ func TestArenaFail(t *testing.T) {
 	if cs, err = arena.Add(cs, segments); err == nil {
 		t.Errorf("Missed collision for segment: %v", segments[len(segments)-2:])
 	}
-
-	fmt.Println(dumpArena(arena))
 }
 
 func TestArena(t *testing.T) {

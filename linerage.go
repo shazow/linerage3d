@@ -115,11 +115,17 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 	}, err
 }
 
+func (world *linerageWorld) Reset() {
+	world.collisionToken = nil
+	world.arena.Reset()
+	world.line.Reset()
+}
+
 func (world *linerageWorld) Focus() mgl.Vec3 {
 	return world.line.position
 }
 
-func (world *linerageWorld) Tick(interval time.Duration) {
+func (world *linerageWorld) Tick(interval time.Duration) error {
 	var lineRotate float64
 
 	if world.bindings.Pressed(KeyLineLeft) {
@@ -147,4 +153,5 @@ func (world *linerageWorld) Tick(interval time.Duration) {
 		log.Printf("Collision with %s\n\tLast segments: %v", err, world.line.segments[n:])
 	}
 
+	return err
 }

@@ -35,13 +35,14 @@ func NewArenaNode(bounds image.Rectangle, shader Shader) *arena {
 func newArena(bounds image.Rectangle, node *Node) *arena {
 	size := bounds.Size()
 
-	return &arena{
+	grid := &arena{
 		Node:   node,
 		bounds: f32bounds{float32(bounds.Min.X), float32(bounds.Min.Y), float32(bounds.Max.X), float32(bounds.Max.Y)},
 		width:  size.X,
 		height: size.Y,
-		grid:   make([]gridCell, size.X*size.Y, size.X*size.Y),
 	}
+	grid.Reset()
+	return grid
 }
 
 type f32bounds struct {
@@ -97,6 +98,10 @@ type arena struct {
 
 	// Debug
 	checked int
+}
+
+func (grid *arena) Reset() {
+	grid.grid = make([]gridCell, grid.width*grid.height, grid.width*grid.height)
 }
 
 func (grid *arena) index(x, y float32) int {

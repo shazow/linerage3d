@@ -7,6 +7,7 @@ import (
 )
 
 type World interface {
-	Tick(time.Duration)
+	Reset()
+	Tick(time.Duration) error
 	Focus() mgl.Vec3
 }

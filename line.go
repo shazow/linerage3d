@@ -12,25 +12,20 @@ import (
 
 func NewLine(shader Shader, bufSize int) *Line {
 	vbo := gl.CreateBuffer()
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferInit(gl.ARRAY_BUFFER, bufSize, gl.DYNAMIC_DRAW)
 
-	position := mgl.Vec3{}
-
-	return &Line{
-		shader:    shader,
-		VBO:       vbo,
-		height:    1.0,
-		step:      3.0,               // Per second
-		direction: mgl.Vec3{1, 0, 1}, // angle=0
-		position:  position,
-		segments:  []mgl.Vec3{position},
+	line := &Line{
+		shader:  shader,
+		VBO:     vbo,
+		bufSize: bufSize,
 	}
+	line.Reset()
+	return line
 }
 
 type Line struct {
-	shader Shader
-	VBO    gl.Buffer
+	shader  Shader
+	VBO     gl.Buffer
+	bufSize int
 
 	position  mgl.Vec3
 	direction mgl.Vec3
@@ -41,6 +36,20 @@ type Line struct {
 	angle       float64
 	angleBuffer float64
 	offset      int
+}
+
+func (line *Line) Reset() {
+	gl.BindBuffer(gl.ARRAY_BUFFER, line.VBO)
+	gl.BufferInit(gl.ARRAY_BUFFER, line.bufSize, gl.DYNAMIC_DRAW)
+
+	line.height = 1.0
+	line.step = 3.0 // Per second
+	line.angle = 0
+	line.angleBuffer = 0
+	line.offset = 0
+	line.direction = mgl.Vec3{1, 0, 1} // angle=0
+	line.position = mgl.Vec3{0, 0, 0}
+	line.segments = []mgl.Vec3{line.position}
 }
 
 func (line *Line) Tick(interval time.Duration, rotate float64) {
@@ -54,7 +63,7 @@ func (line *Line) Tick(interval time.Duration, rotate float64) {
 func (line *Line) Add(angle float64, step float32) {
 	line.angleBuffer = angle
 	// Throttle turning (do we need this?)
-	turning := math.Abs(line.angleBuffer-line.angle) > 0.5
+	turning := math.Abs(line.angleBuffer-line.angle) > 0.1
 	if turning {
 		line.angle = line.angleBuffer
 		sin, cos := math.Sin(line.angle), math.Cos(line.angle)
