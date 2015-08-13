@@ -6,6 +6,7 @@ import (
 	"time"
 
 	mgl "github.com/go-gl/mathgl/mgl32"
+	"github.com/shazow/linerage3d/collision"
 )
 
 // TODO: Load into here
@@ -34,10 +35,10 @@ type linerageWorld struct {
 	scene    Scene
 	bindings *Bindings
 
-	collisionToken *cellSegment
-	arena          *arena
-	line           *Line
-	emitter        Emitter
+	tracker collision.Tracker
+	arena   *arena
+	line    *Line
+	emitter Emitter
 }
 
 func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, error) {
@@ -92,6 +93,8 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 	arena := NewArenaNode(image.Rect(-10, -10, 10, 10), shaders.Get("line"))
 	scene.Add(arena)
 
+	tracker := arena.Track(&line.segments)
+
 	bindings.On(KeyReload, func(_ KeyBinding) {
 		log.Println("Reloading shaders.")
 		err := shaders.Reload()
@@ -102,13 +105,14 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 
 	bindings.On(KeyDebug, func(_ KeyBinding) {
 		log.Println("Segment: ", line.segments)
-		log.Println(dumpArena(arena))
+		log.Println(arena.Collider.String())
 	})
 
 	return &linerageWorld{
 		scene:    scene,
 		bindings: bindings,
 
+		tracker: tracker,
 		arena:   arena,
 		line:    line,
 		emitter: emitter,
@@ -116,9 +120,9 @@ func LinerageWorld(scene Scene, bindings *Bindings, shaders Shaders) (World, err
 }
 
 func (world *linerageWorld) Reset() {
-	world.collisionToken = nil
-	world.arena.Reset()
 	world.line.Reset()
+	world.arena.Reset()
+	world.tracker = world.arena.Track(&world.line.segments)
 }
 
 func (world *linerageWorld) Focus() mgl.Vec3 {
@@ -144,7 +148,7 @@ func (world *linerageWorld) Tick(interval time.Duration) error {
 	world.emitter.Tick(interval)
 
 	var err error
-	world.collisionToken, err = world.arena.Add(world.collisionToken, world.line.segments)
+	err = world.tracker.Update()
 	if err != nil {
 		n := len(world.line.segments) - 4
 		if n < 0 {
