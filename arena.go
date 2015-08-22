@@ -22,7 +22,7 @@ func NewArenaNode(bounds image.Rectangle, shader Shader) *arena {
 func newArena(bounds image.Rectangle, node *Node) *arena {
 	arena := &arena{
 		Node:     node,
-		Collider: collision.GridCollider(bounds),
+		Collider: collision.LinearCollider(bounds),
 	}
 	arena.Reset()
 	return arena
