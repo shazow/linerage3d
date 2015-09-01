@@ -125,8 +125,8 @@ func (world *linerageWorld) Reset() {
 	world.tracker = world.arena.Track(&world.line.segments)
 }
 
-func (world *linerageWorld) Focus() mgl.Vec3 {
-	return world.line.position
+func (world *linerageWorld) Focus() Vector {
+	return world.line
 }
 
 func (world *linerageWorld) Tick(interval time.Duration) error {

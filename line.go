@@ -85,6 +85,16 @@ func (line *Line) Add(angle float64, step float32) {
 	}
 }
 
+// Vector interface:
+
+func (vec *Line) Position() mgl.Vec3 {
+	return vec.position
+}
+
+func (vec *Line) Direction() mgl.Vec3 {
+	return vec.direction
+}
+
 // Shape interface:
 
 func (shape *Line) Len() int {

@@ -107,7 +107,7 @@ func (c *EulerCamera) Projection() mgl.Mat4 {
 // String returns a string representation of the camera for debugging.
 func (c *EulerCamera) String() string {
 	return fmt.Sprintf(`Camera:
-	eye:%v
+	eye:    %v
 	center: %v
 	up:     %v
 	pitch, yaw: %v, %v`+"\n", c.eye, c.center, c.up, c.pitch, c.yaw)

@@ -43,7 +43,8 @@ type Engine struct {
 func (e *Engine) Start() {
 	var err error
 
-	e.followOffset = mgl.Vec3{0, 10, -3}
+	e.following = true
+	e.followOffset = mgl.Vec3{0, 7, -3}
 	e.camera.MoveTo(e.followOffset)
 	e.camera.RotateTo(mgl.Vec3{0, 0, 5})
 
@@ -136,7 +137,7 @@ func (e *Engine) Draw(c config.Event) {
 		e.following = false
 		e.camera.Move(camDelta)
 	} else if e.following {
-		pos := e.world.Focus()
+		pos := e.world.Focus().Position()
 		e.camera.Lerp(pos.Add(e.followOffset), pos, 0.1)
 	}
 
