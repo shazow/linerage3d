@@ -14,12 +14,15 @@ import (
 	"golang.org/x/mobile/event/paint"
 	"golang.org/x/mobile/event/touch"
 	"golang.org/x/mobile/exp/app/debug"
-	"golang.org/x/mobile/geom"
 	"golang.org/x/mobile/gl"
 )
 
 const mouseSensitivity = 0.01
 const moveSpeed = 0.1
+
+type Point struct {
+	X, Y float32
+}
 
 type Engine struct {
 	camera   *QuatCamera
@@ -31,8 +34,8 @@ type Engine struct {
 	started  time.Time
 	lastTick time.Time
 
-	touchLoc     geom.Point
-	dragOrigin   geom.Point
+	touchLoc     Point
+	dragOrigin   Point
 	dragging     bool
 	paused       bool
 	gameover     bool
@@ -79,19 +82,19 @@ func (e *Engine) Stop() {
 	e.shaders.Close()
 }
 
-func (e *Engine) Config(new, old config.Event) {
-	e.touchLoc = geom.Point{new.WidthPt / 2, new.HeightPt / 2}
-	e.camera.SetPerspective(0.785, float32(new.WidthPt/new.HeightPt), 0.1, 100.0)
+func (e *Engine) Config(cfg, old config.Event) {
+	e.touchLoc.X, e.touchLoc.Y = float32(cfg.WidthPt)/2, float32(cfg.HeightPt)/2
+	e.camera.SetPerspective(0.785, float32(cfg.WidthPt/cfg.HeightPt), 0.1, 100.0)
 }
 
 func (e *Engine) Touch(t touch.Event, c config.Event) {
 	if t.Type == touch.TypeBegin {
-		e.dragOrigin = t.Loc
+		e.dragOrigin = Point{t.X, t.Y}
 		e.dragging = true
 	} else if t.Type == touch.TypeEnd {
 		e.dragging = false
 	}
-	e.touchLoc = t.Loc
+	e.touchLoc = Point{t.X, t.Y}
 	if e.dragging {
 		deltaX, deltaY := float32(e.dragOrigin.X-e.touchLoc.X), float32(e.dragOrigin.Y-e.touchLoc.Y)
 		e.camera.Rotate(mgl.Vec3{deltaY * mouseSensitivity, deltaX * mouseSensitivity, 0})

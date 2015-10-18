@@ -1,0 +1,3 @@
+[submodule "vendor/golang.org/x/mobile"]
+	path = vendor/golang.org/x/mobile
+	url = https://github.com/golang/mobile
